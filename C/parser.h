@@ -11,6 +11,9 @@
 #define GET_COUNTER_STRING "GETC"
 #define SET_COUNTER_STRING "SETC"
 #define DEL_COUNTER_STRING "DELC"
+#define GET_DUMP_STRING "GETDUMP"
+#define NEW_DUMP_STRING "NEWDUMP"
+#define DUMP_INTERVAL_STRING "DUMPINTERVAL"
 
 enum CommandType {
     Get,
@@ -19,6 +22,8 @@ enum CommandType {
     Get_Counter,
     Set_Counter,
     Del_Counter,
+    Get_Dump,
+    New_Dump,
     Invalid
 };
 

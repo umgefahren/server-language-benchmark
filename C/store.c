@@ -3,6 +3,8 @@
 //
 
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "store.h"
 
@@ -46,4 +48,39 @@ unsigned long long store_set_counter(struct Store * store) {
 
 unsigned long long store_del_counter(struct Store * store) {
     return atomic_load(&store->del_counter);
+};
+
+char * store_new_dump(struct Store * store, char * out) {
+    struct Record * records = malloc(sizeof(struct Record));
+    unsigned long records_num = c_hash_map_all_records(store->content, records);
+    char * opening_bracket = "[";
+    out = realloc(out, sizeof(char) * (strlen(out) + strlen(opening_bracket)));
+    out = strcat(out, opening_bracket);
+    for (unsigned long i = 0; i < records_num; i++) {
+        char * key_label = "{ \"key\": \"";
+        char * key = records[i].key;
+        char * associated_value_label = "\",\"associated_value\":{\"value\":\"";
+        char * value = records[i].value;
+        char * timestamp_label = "\",\"timestamp\":\"";
+        char * timestamp = ctime(&records[i].timestamp);
+        char * closing = "\"}}";
+        if (i < records_num - 1)
+            closing = "\"}},";
+        size_t size_of_value = strlen(key_label) + strlen(key) + strlen(associated_value_label) + strlen(value) +
+                strlen(timestamp_label) + strlen(timestamp) + strlen(closing);
+        char * value_string = malloc(sizeof(char) * size_of_value);
+        value_string = strcat(value_string, key_label);
+        value_string = strcat(value_string, key);
+        value_string = strcat(value_string, associated_value_label);
+        value_string = strcat(value_string, value);
+        value_string = strcat(value_string, timestamp_label);
+        value_string = strcat(value_string, timestamp);
+        value_string = strcat(value_string, closing);
+        out = realloc(out, sizeof(char) * (strlen(out) + strlen(value_string)));
+        out = strcat(out, value_string);
+    }
+    char * closing_bracket = "]";
+    out = realloc(out, sizeof(char) * (strlen(out) + strlen(closing_bracket)));
+    out = strcat(out, closing_bracket);
+    return out;
 };

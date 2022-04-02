@@ -73,6 +73,9 @@ inline u_int8_t c_hash_map_set(c_hash_map_t * map, char * key, char * value, uns
         return rw_acquire_lock;
     }
     struct Record * new_record = (struct Record *) malloc(sizeof(struct Record));
+    new_record->key = malloc(sizeof(char) * strlen(key));
+    new_record->key = key;
+    new_record->key_len = strlen(key);
     new_record->value = malloc(sizeof(char) * value_len);
     new_record->value = value;
     new_record->value_len = value_len;
@@ -98,4 +101,23 @@ inline u_int8_t c_hash_map_del(c_hash_map_t * map, char * key) {
     kh_del(m32, map->content, k);
     int rw_release_lock = pthread_rwlock_unlock(map->rw_lock);
     return rw_release_lock;
+};
+
+unsigned long c_hash_map_all_records(c_hash_map_t * map, struct Record * records) {
+    unsigned long num_records = 0;
+    int rw_acquire_lock =  pthread_rwlock_rdlock(map->rw_lock);
+    if (rw_acquire_lock != 0) {
+        puts("Couldn't acquire read lock in concurrent hashmap");
+        exit(1);
+    }
+    for (khint_t k = kh_begin(map->content); k != kh_end(map->content); ++k) {
+        if (kh_exist(map->content, k)) {
+            struct Record * val = kh_value(map->content, k);
+            records = realloc(records, sizeof(struct Record) * (num_records + 1));
+            records[0] = *val;
+            num_records += 1;
+        }
+    }
+    pthread_rwlock_unlock(map->rw_lock);
+    return num_records;
 };

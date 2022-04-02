@@ -85,6 +85,12 @@ struct CompleteCommand * parse(char * input) {
     } else if (ret->type == Del_Counter && loop_count != 1) {
         invalidate_command(ret);
         return ret;
+    } else if (ret->type == Get_Dump && loop_count != 1) {
+        invalidate_command(ret);
+        return ret;
+    } else if (ret->type == New_Dump && loop_count != 1) {
+        invalidate_command(ret);
+        return ret;
     }
 
     return ret;
@@ -103,6 +109,10 @@ inline enum CommandType classify_command(char * token) {
         return Set_Counter;
     else if (strcmp(token, DEL_COUNTER_STRING) == 0)
         return Del_Counter;
+    else if (strcmp(token, GET_DUMP_STRING) == 0)
+        return Get_Dump;
+    else if (strcmp(token, NEW_DUMP_STRING) == 0)
+        return New_Dump;
     else
         return Invalid;
 }

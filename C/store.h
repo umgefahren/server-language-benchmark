@@ -32,4 +32,6 @@ unsigned long long store_set_counter(struct Store * store);
 
 unsigned long long store_del_counter(struct Store * store);
 
+char * store_new_dump(struct Store * store, char * out);
+
 #endif //SERVER_BENCH_STORE_H
