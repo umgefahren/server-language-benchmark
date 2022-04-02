@@ -30,12 +30,14 @@ c_hash_map_t * c_hash_map_init() {
 };
 
 void c_hash_map_destroy(c_hash_map_t * map) {
+    /*
     for (khint_t k = kh_begin(map->content); k != kh_end(map->content); ++k) {
         if (kh_exist(map->content, k)) {
             struct Record * to_free = kh_value(map->content, k);
             free(to_free);
         }
     }
+    */
     kh_destroy(m32, map->content);
     int rw_destroy_res = pthread_rwlock_destroy(map->rw_lock);
     if (rw_destroy_res != 0) {
@@ -74,14 +76,17 @@ inline u_int8_t c_hash_map_set(c_hash_map_t * map, char * key, char * value, uns
     }
     struct Record * new_record = (struct Record *) malloc(sizeof(struct Record));
     new_record->key = malloc(sizeof(char) * strlen(key));
-    new_record->key = key;
-    new_record->key_len = strlen(key);
+    new_record->key = strcpy(new_record->key, key);
+    new_record->key_len = strlen(new_record->key);
     new_record->value = malloc(sizeof(char) * value_len);
-    new_record->value = value;
+    new_record->value = strcpy(new_record->value, value);
     new_record->value_len = value_len;
     new_record->timestamp = time(NULL);
     int absent;
-    khint_t kh_key = kh_put(m32, map->content, key, &absent);
+    khint_t kh_key = kh_put(m32, map->content, new_record->key, &absent);
+    if (absent)
+        kh_key(map->content, kh_key) = new_record->key;
+    //kh_key(map->content, kh_key) = new_record;
     kh_value(map->content, kh_key) = new_record;
     int rw_release_lock = pthread_rwlock_unlock(map->rw_lock);
     if (rw_release_lock != 0) {
@@ -103,8 +108,8 @@ inline u_int8_t c_hash_map_del(c_hash_map_t * map, char * key) {
     return rw_release_lock;
 };
 
-unsigned long c_hash_map_all_records(c_hash_map_t * map, struct Record * records) {
-    unsigned long num_records = 0;
+struct Record * c_hash_map_all_records(c_hash_map_t * map, unsigned long * counter) {
+    struct Record * records = malloc(sizeof(struct Record) * 1);
     int rw_acquire_lock =  pthread_rwlock_rdlock(map->rw_lock);
     if (rw_acquire_lock != 0) {
         puts("Couldn't acquire read lock in concurrent hashmap");
@@ -113,11 +118,17 @@ unsigned long c_hash_map_all_records(c_hash_map_t * map, struct Record * records
     for (khint_t k = kh_begin(map->content); k != kh_end(map->content); ++k) {
         if (kh_exist(map->content, k)) {
             struct Record * val = kh_value(map->content, k);
-            records = realloc(records, sizeof(struct Record) * (num_records + 1));
-            records[0] = *val;
-            num_records += 1;
+            records = realloc(records, sizeof(struct Record) * (*counter + 1));
+            // records[num_records] = *val;
+            // records = val;
+            records[*counter].key = val->key;
+            records[*counter].key_len = val->key_len;
+            records[*counter].value = val->value;
+            records[*counter].value_len = val->value_len;
+            records[*counter].timestamp = val->timestamp;
+            counter[0]++;
         }
     }
     pthread_rwlock_unlock(map->rw_lock);
-    return num_records;
+    return records;
 };

@@ -173,9 +173,14 @@ void execute_command(int socket_fd, struct CompleteCommand * command, struct Sto
         unsigned long long ret_val = store_del_counter(store);
         write_counter(socket_fd, ret_val);
     } else if (command->type == New_Dump) {
-        char * out = malloc(sizeof(char) * 1);
+        char * out = malloc(sizeof(char) * 2);
         out = store_new_dump(store, out);
         write(socket_fd, out, strlen(out));
+        free(out);
+    } else if (command->type == Get_Dump) {
+        char * out = store_get_dump(store);
+        write(socket_fd, out, strlen(out));
+        free(out);
     }
     write(socket_fd, "\n", 1);
 }

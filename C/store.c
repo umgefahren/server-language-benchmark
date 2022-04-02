@@ -14,6 +14,12 @@ struct Store * store_init() {
     atomic_store(&ret->set_counter, 0);
     atomic_store(&ret->get_counter, 0);
     atomic_store(&ret->del_counter, 0);
+    ret->dump_string = malloc(sizeof(char) * 2);
+    ret->dump_string[0] = *"[";
+    ret->dump_string[1] = *"]";
+    ret->dump_string_mutex = malloc(sizeof(pthread_rwlock_t));
+    ret->last_dump = time(NULL);
+    ret->dump_delta = STD_DUMP_INTERVAL;
     return ret;
 };
 
@@ -50,9 +56,9 @@ unsigned long long store_del_counter(struct Store * store) {
     return atomic_load(&store->del_counter);
 };
 
-char * store_new_dump(struct Store * store, char * out) {
-    struct Record * records = malloc(sizeof(struct Record));
-    unsigned long records_num = c_hash_map_all_records(store->content, records);
+inline char * store_new_dump(struct Store * store, char * out) {
+    unsigned long records_num = 0;
+    struct Record * records = c_hash_map_all_records(store->content, &records_num);
     char * opening_bracket = "[";
     out = realloc(out, sizeof(char) * (strlen(out) + strlen(opening_bracket)));
     out = strcat(out, opening_bracket);
@@ -82,5 +88,26 @@ char * store_new_dump(struct Store * store, char * out) {
     char * closing_bracket = "]";
     out = realloc(out, sizeof(char) * (strlen(out) + strlen(closing_bracket)));
     out = strcat(out, closing_bracket);
+    pthread_rwlock_wrlock(store->dump_string_mutex);
+    free(store->dump_string);
+    store->dump_string = malloc(sizeof(char) * strlen(out));
+    strcpy(store->dump_string, out);
+    store->last_dump = time(NULL);
+    pthread_rwlock_unlock(store->dump_string_mutex);
     return out;
 };
+
+inline char * store_get_dump(struct Store * store) {
+    pthread_rwlock_rdlock(store->dump_string_mutex);
+    double time_delta = difftime(store->last_dump, time(NULL));
+    if (time_delta < store->dump_delta) {
+        char * out = malloc(sizeof(char) * strlen(store->dump_string));
+        strcpy(out, store->dump_string);
+        pthread_rwlock_unlock(store->dump_string_mutex);
+        return out;
+    } else {
+        pthread_rwlock_unlock(store->dump_string_mutex);
+        char * out = malloc(sizeof(char) * 1);
+        return store_new_dump(store, out);
+    }
+}

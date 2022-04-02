@@ -33,6 +33,6 @@ u_int8_t c_hash_map_set(c_hash_map_t * map, char * key, char * value, unsigned i
 
 u_int8_t c_hash_map_del(c_hash_map_t * map, char * key);
 
-unsigned long c_hash_map_all_records(c_hash_map_t * map, struct Record * records);
+struct Record * c_hash_map_all_records(c_hash_map_t * map, unsigned long * counter);
 
 #endif //SERVER_BENCH_C_HASH_MAP_H

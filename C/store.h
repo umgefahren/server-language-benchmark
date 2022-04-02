@@ -5,7 +5,12 @@
 #ifndef SERVER_BENCH_STORE_H
 #define SERVER_BENCH_STORE_H
 
+#define STD_DUMP_INTERVAL 10.0
+
 #include <stdatomic.h>
+#include <pthread.h>
+#include <time.h>
+#include <stdbool.h>
 
 #include "c_hash_map.h"
 
@@ -14,6 +19,10 @@ struct Store {
     atomic_ullong get_counter;
     atomic_ullong set_counter;
     atomic_ullong del_counter;
+    char * dump_string;
+    pthread_rwlock_t * dump_string_mutex;
+    time_t last_dump;
+    double dump_delta;
 };
 
 struct Store * store_init();
@@ -33,5 +42,7 @@ unsigned long long store_set_counter(struct Store * store);
 unsigned long long store_del_counter(struct Store * store);
 
 char * store_new_dump(struct Store * store, char * out);
+
+char * store_get_dump(struct Store * store);
 
 #endif //SERVER_BENCH_STORE_H
