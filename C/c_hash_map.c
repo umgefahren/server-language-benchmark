@@ -50,9 +50,17 @@ inline struct Record * c_hash_map_get(c_hash_map_t * map, char * key) {
        puts("Couldn't acquire read lock in concurrent hashmap");
        exit(1);
    }
+   if (kh_size(map->content) == 0) {
+       pthread_rwlock_unlock(map->rw_lock);
+       return NULL;
+   }
    khint32_t kh_key = kh_get(m32, map->content, key);
+   if (!kh_exist(map->content, kh_key)) {
+       pthread_rwlock_unlock(map->rw_lock);
+       return NULL;
+   }
    struct Record * in_value = kh_value(map->content, kh_key);
-   pthread_rwlock_unlock(map->rw_lock);
+    pthread_rwlock_unlock(map->rw_lock);
    struct Record * out_value = malloc(sizeof(struct Record));
    memcpy(out_value, in_value, sizeof(struct Record));
    return out_value;

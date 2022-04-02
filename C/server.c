@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <string.h>
 
 #ifdef __APPLE__
 #define DOMAIN PF_INET
@@ -16,12 +17,18 @@
 #endif
 
 #include "server.h"
+#include "parser.h"
+
+char * not_found_string = "not found";
+unsigned long not_found_len = 9;
 
 void * handle_connection(void * arguments);
 
 ssize_t read_line(int socket_fd, char * buffer);
 
-int server_init(pthread_t * threads, int threads_num) {
+void execute_command(int socket_fd, struct CompleteCommand * command, struct Store * store);
+
+int server_init(pthread_t * threads, int threads_num, struct Store * store) {
     int server_fd = socket(DOMAIN, SOCK_STREAM, 6);
     if (server_fd == -1) {
         perror("socket failed");
@@ -63,6 +70,7 @@ int server_init(pthread_t * threads, int threads_num) {
         }
         struct handler_params *params = malloc(sizeof(struct handler_params));
         params->socket_fd = new_socket;
+        params->store = store;
         threads_num += 1;
         threads = realloc(threads, sizeof(pthread_t) * threads_num);
         pthread_t handler_thread = threads[threads_num - 1];
@@ -91,8 +99,11 @@ void *handle_connection(void *arguments) {
     printf("Socket fd => %i\n", socket_fd);
     char * buffer = malloc(sizeof(char) * 100);
     read_line(socket_fd, buffer);
-    puts(buffer);
+    struct CompleteCommand * command = parse(buffer);
+    complete_command_print(command);
+    execute_command(socket_fd, command, params->store);
     close(socket_fd);
+    free(command);
     return NULL;
 }
 
@@ -122,3 +133,43 @@ ssize_t read_line(int socket_fd, char * buffer) {
     }
     return total_read_len;
 }
+
+void write_record(int socket_fd, struct Record * record) {
+    if (record == NULL) {
+        write(socket_fd, not_found_string, not_found_len);
+    } else {
+        write(socket_fd, record->value, record->value_len);
+    }
+}
+
+void write_counter(int socket_fd, unsigned long long value) {
+    char ret_string[30000];
+    sprintf(ret_string, "%llu", value);
+    write(socket_fd, ret_string, strlen(ret_string));
+}
+
+void execute_command(int socket_fd, struct CompleteCommand * command, struct Store * store) {
+    if (command->type == Get) {
+        struct Record * ret_record = store_get(store, command->key);
+        write_record(socket_fd, ret_record);
+    } else if (command->type == Set) {
+        struct Record * ret_record = store_get(store, command->key);
+        store_set(store, command->key, command->value, command->value_len);
+        write_record(socket_fd, ret_record);
+    } else if (command->type == Del) {
+        struct Record * ret_record = store_get(store, command->key);
+        store_del(store, command->key);
+        write_record(socket_fd, ret_record);
+    } else if (command->type == Get_Counter) {
+        unsigned long long ret_val = store_get_counter(store);
+        write_counter(socket_fd, ret_val);
+    } else if (command->type == Set_Counter) {
+        unsigned long long ret_val = store_set_counter(store);
+        write_counter(socket_fd, ret_val);
+    } else if (command->type == Del_Counter) {
+        unsigned long long ret_val = store_del_counter(store);
+        write_counter(socket_fd, ret_val);
+    }
+    write(socket_fd, "\n", 1);
+}
+
