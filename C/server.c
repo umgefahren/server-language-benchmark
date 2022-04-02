@@ -148,6 +148,28 @@ void write_counter(int socket_fd, unsigned long long value) {
     write(socket_fd, ret_string, strlen(ret_string));
 }
 
+struct DelCommand {
+    char * key;
+    struct tm * sleep_time;
+    struct Store * store;
+};
+
+void sleep_time(struct tm * time) {
+    int second = 0;
+    second += time->tm_sec;
+    second += time->tm_min * 60;
+    second += time->tm_hour * 60 * 60;
+    sleep(second);
+}
+
+void * delete_handler(void * arguments) {
+    struct DelCommand * del_command = (struct DelCommand *) arguments;
+    sleep_time(del_command->sleep_time);
+    store_del(del_command->store, del_command->key);
+    free(del_command);
+    return NULL;
+}
+
 void execute_command(int socket_fd, struct CompleteCommand * command, struct Store * store) {
     if (command->type == Get) {
         struct Record * ret_record = store_get(store, command->key);
@@ -178,9 +200,28 @@ void execute_command(int socket_fd, struct CompleteCommand * command, struct Sto
         write(socket_fd, out, strlen(out));
         free(out);
     } else if (command->type == Get_Dump) {
-        char * out = store_get_dump(store);
+        char *out = store_get_dump(store);
         write(socket_fd, out, strlen(out));
         free(out);
+    } else if (command->type == Dump_Interval) {
+        double seconds = convert_to_seconds(command->time);
+        store_change_interval(store, seconds);
+    } else if (command->type == Set_TTL) {
+        struct Record * ret_record = store_get(store, command->key);
+        store_set(store, command->key, command->value, command->value_len);
+        struct DelCommand * del_command = malloc(sizeof(struct DelCommand));
+        del_command->key = malloc(sizeof(char) * strlen(command->key));
+        strcpy(del_command->key, command->key);
+        del_command->sleep_time = malloc(sizeof(struct tm));
+        memcpy(del_command->sleep_time, command->time, sizeof(struct tm));
+        pthread_t delete_thread;
+        int result_code = pthread_create(&delete_thread, NULL, delete_handler, del_command);
+        if (result_code != 0) {
+            perror("Error creating deleting thread");
+            exit(1);
+        }
+        write_record(socket_fd, ret_record);
+        free(ret_record);
     }
     write(socket_fd, "\n", 1);
 }

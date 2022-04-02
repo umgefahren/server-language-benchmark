@@ -45,4 +45,8 @@ char * store_new_dump(struct Store * store, char * out);
 
 char * store_get_dump(struct Store * store);
 
+void store_change_interval(struct Store * store, double interval);
+
+double convert_to_seconds(struct tm * time);
+
 #endif //SERVER_BENCH_STORE_H

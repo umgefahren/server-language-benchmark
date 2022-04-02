@@ -5,6 +5,8 @@
 #ifndef SERVER_BENCH_PARSER_H
 #define SERVER_BENCH_PARSER_H
 
+#include <time.h>
+
 #define GET_STRING "GET"
 #define SET_STRING "SET"
 #define DEL_STRING "DEL"
@@ -14,6 +16,7 @@
 #define GET_DUMP_STRING "GETDUMP"
 #define NEW_DUMP_STRING "NEWDUMP"
 #define DUMP_INTERVAL_STRING "DUMPINTERVAL"
+#define SET_TTL_STRING "SETTTL"
 
 enum CommandType {
     Get,
@@ -24,6 +27,8 @@ enum CommandType {
     Del_Counter,
     Get_Dump,
     New_Dump,
+    Dump_Interval,
+    Set_TTL,
     Invalid
 };
 
@@ -32,6 +37,7 @@ struct CompleteCommand {
     char * key;
     char * value;
     unsigned int value_len;
+    struct tm * time;
 };
 
 struct CompleteCommand * parse(char * input);

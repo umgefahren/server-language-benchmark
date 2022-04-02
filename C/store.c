@@ -111,3 +111,9 @@ inline char * store_get_dump(struct Store * store) {
         return store_new_dump(store, out);
     }
 }
+
+void store_change_interval(struct Store * store, double interval) {
+    pthread_rwlock_wrlock(store->dump_string_mutex);
+    store->dump_delta = interval;
+    pthread_rwlock_unlock(store->dump_string_mutex);
+}
