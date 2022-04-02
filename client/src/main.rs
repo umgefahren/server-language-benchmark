@@ -1,6 +1,9 @@
+mod commands;
+
 use tokio::net::TcpStream;
 use tokio::io::{AsyncWriteExt, AsyncReadExt, AsyncBufRead, AsyncBufReadExt, BufReader, BufWriter};
 
+/*
 #[tokio::main]
 async fn main() {
     let socket = TcpStream::connect("127.0.0.1:8080").await.expect("Error during connection");
@@ -18,4 +21,22 @@ async fn main() {
         stream_read.read_line(&mut back).await.expect("Error");
         println!("=> {:?}", back);
     }
+}
+*/
+
+#[tokio::main]
+async fn main() {
+    let command_type = &[
+        "Get",
+        "Set",
+        "Del",
+        "GetCounter",
+        "SetCounter",
+        "DelCounter",
+        "GetDump",
+        "NewDump",
+        "DumpInterval",
+        "SetTTL"
+    ];
+
 }
