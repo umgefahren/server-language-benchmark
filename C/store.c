@@ -9,6 +9,9 @@
 struct Store * store_init() {
     struct Store * ret = malloc(sizeof(struct Store));
     ret->content = c_hash_map_init();
+    atomic_store(&ret->set_counter, 0);
+    atomic_store(&ret->get_counter, 0);
+    atomic_store(&ret->del_counter, 0);
     return ret;
 };
 

@@ -143,7 +143,7 @@ void write_record(int socket_fd, struct Record * record) {
 }
 
 void write_counter(int socket_fd, unsigned long long value) {
-    char ret_string[30000];
+    char ret_string[30000] = { " " };
     sprintf(ret_string, "%llu", value);
     write(socket_fd, ret_string, strlen(ret_string));
 }
@@ -152,14 +152,17 @@ void execute_command(int socket_fd, struct CompleteCommand * command, struct Sto
     if (command->type == Get) {
         struct Record * ret_record = store_get(store, command->key);
         write_record(socket_fd, ret_record);
+        free(ret_record);
     } else if (command->type == Set) {
         struct Record * ret_record = store_get(store, command->key);
         store_set(store, command->key, command->value, command->value_len);
         write_record(socket_fd, ret_record);
+        free(ret_record);
     } else if (command->type == Del) {
         struct Record * ret_record = store_get(store, command->key);
         store_del(store, command->key);
         write_record(socket_fd, ret_record);
+        free(ret_record);
     } else if (command->type == Get_Counter) {
         unsigned long long ret_val = store_get_counter(store);
         write_counter(socket_fd, ret_val);
