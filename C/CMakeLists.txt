@@ -3,7 +3,7 @@ project(server_bench C)
 
 set(CMAKE_C_STANDARD 17)
 
-add_library(c_hash_map c_hash_map.c c_hash_map.h khash.h)
+add_library(c_hash_map c_hash_map.c c_hash_map.h klib/khash.h)
 
 add_library(store store.c store.h)
 

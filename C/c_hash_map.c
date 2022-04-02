@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
-#include "khash.h"
+#include "klib/khash.h"
 
 KHASH_MAP_INIT_STR(m32, struct Record *)
 
