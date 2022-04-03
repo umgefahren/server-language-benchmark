@@ -1,0 +1,18 @@
+module Parsing
+  def parse_type: (part: String) -> Symbol
+
+  def validate_string: (input: String) -> bool
+
+  def parse_command: (line: String) -> Command?
+
+  def parse_time: (input: String) -> int?
+end
+
+class Command
+  attr_accessor type: Symbol
+  attr_accessor key: String?
+  attr_accessor value: String?
+  attr_accessor time: int?
+
+  def initialize: (type: Symbol, key: String?, value: String?, time: int?) -> void
+end
