@@ -11,7 +11,7 @@ use crate::commands::CompleteCommand;
 
 const CONCURRENT_CONNS: usize = 200;
 
-const BENCH_COUNT: usize = 2_000;
+const BENCH_COUNT: usize = 10_000;
 
 /*
 #[tokio::main]

@@ -97,13 +97,18 @@ void *handle_connection(void *arguments) {
     struct handler_params * params = (struct handler_params *) arguments;
     int socket_fd = params->socket_fd;
     printf("Socket fd => %i\n", socket_fd);
-    char * buffer = malloc(sizeof(char) * 100);
-    read_line(socket_fd, buffer);
-    struct CompleteCommand * command = parse(buffer);
-    complete_command_print(command);
-    execute_command(socket_fd, command, params->store);
+    while (1) {
+        char * buffer = malloc(sizeof(char) * 100);
+        ssize_t num = read_line(socket_fd, buffer);
+        if (num == 0) {
+                break;
+        }
+        struct CompleteCommand * command = parse(buffer);
+        complete_command_print(command);
+        execute_command(socket_fd, command, params->store);
+        free(command);
+    }
     close(socket_fd);
-    free(command);
     return NULL;
 }
 

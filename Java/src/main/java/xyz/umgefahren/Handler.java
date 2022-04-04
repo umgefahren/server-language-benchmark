@@ -32,21 +32,30 @@ public class Handler implements Runnable {
             e.printStackTrace();
             return;
         }
-        try {
-            String inLine = in.readLine();
-            inLine = inLine.stripTrailing();
-            System.out.println("Read Line => " + inLine);
-            CompleteCommand command = CommandFactory.parse(inLine);
-            if (command == null) {
-                out.println("Invalid command");
-            } else {
-                command.execute(out, store);
-            }
-            out.flush();
-            socket.close();
+        while (true) {
+            try {
+                String inLine = in.readLine();
+                if (inLine == null) {
+                    break;
+                }
+                inLine = inLine.stripTrailing();
+                CompleteCommand command = CommandFactory.parse(inLine);
+                if (command == null) {
+                    out.println("Invalid command");
+                } else {
+                    command.execute(out, store);
+                }
+                out.flush();
 
-        } catch (IOException e) {
-            e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+                break;
+            }
+        }
+        try {
+            socket.close();
+        } catch (IOException ignored) {
+
         }
     }
 }
