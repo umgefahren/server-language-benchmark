@@ -1,15 +1,26 @@
 require 'socket'
 require './command.rb'
+require './store.rb'
+require './handler.rb'
 
 class Main
   include Parsing
 
   def run
-    string = 'GET key'
+    command_queue = Queue.new
 
+    Thread.new do
+      store_process command_queue
+    end
 
-    command = parse_command string
-    puts command
+    server = TCPServer.new 8080
+    loop do
+      client = server.accept
+      Thread.new do
+        h = Handler.new client, command_queue
+        h.execute
+      end
+    end
   end
 end
 

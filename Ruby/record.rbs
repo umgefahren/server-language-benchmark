@@ -1,0 +1,7 @@
+class Record
+  attr_reader key: String
+  attr_reader value: String
+  attr_reader timestamp: DateTime
+
+  def initialize: (key: String, value: String) -> void
+end

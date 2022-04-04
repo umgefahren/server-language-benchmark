@@ -1,0 +1,9 @@
+class Store
+  def set: (key: String, value: String) -> void
+  def get: (key: String) -> Record?
+  def del: (key: String) -> Record?
+
+  def get_counter: -> int
+  def set_counter: -> int
+  def del_counter: -> int
+end

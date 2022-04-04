@@ -62,6 +62,11 @@ module Parsing
   end
 
   def parse_command(line)
+    if line == nil
+      command = Command.new
+      command.type = :invalid
+      return command
+    end
     parts = line.split ' '
     if parts.length < 1
       return nil
