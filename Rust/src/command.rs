@@ -189,7 +189,8 @@ pub(crate) async fn write_record_opt<T: AsyncWrite + std::marker::Unpin>(record_
 			record.write(writer).await?;
 		},
 		None => {
-			writer.write_all(NOT_FOUND_STRING.as_bytes()).await?;
+			// println!("Writing {:?}", NOT_FOUND_STRING);
+			writer.write_all((NOT_FOUND_STRING.to_owned() + "\n").as_bytes()).await?;
 			writer.flush().await?;
 		}
 	}
@@ -197,14 +198,14 @@ pub(crate) async fn write_record_opt<T: AsyncWrite + std::marker::Unpin>(record_
 }
 
 pub(crate) async fn write_counter<T: AsyncWrite + std::marker::Unpin>(num: u64, mut writer: T) -> Result<(), Box<dyn Error>> {
-	let write_string = format!("{:?}\n", num);
+	let write_string = format!("{}\n", num);
 	writer.write_all(write_string.as_bytes()).await?;
 	writer.flush().await?;
 	Ok(())
 }
 
 pub(crate) async fn write_dump<T: AsyncWrite + std::marker::Unpin>(dump: Arc<String>, mut writer: T) -> Result<(), Box<dyn Error>> {
-	let write_string = format!("{:?}\n", dump.as_str());
+	let write_string = format!("{}\n", dump.as_str());
 	writer.write_all(write_string.as_bytes()).await?;
 	writer.flush().await?;
 	Ok(())
@@ -223,6 +224,7 @@ impl CompleteCommand {
 			}
 			CompleteCommand::Del { key } => {
 				let record_opt = store.del(key);
+
 				write_record_opt(record_opt, writer).await?;
 			}
 			CompleteCommand::GetCounter => {

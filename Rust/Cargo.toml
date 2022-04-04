@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 tokio = {version = "1", features = ["net", "io-util", "macros", "rt-multi-thread", "time", "sync"]}
-chashmap = "2.2.2"
 regex = "1.5.5"
 lazy_static = "1.4.0"
 serde = {version = "1", features = ["derive"]}

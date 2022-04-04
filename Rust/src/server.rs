@@ -9,6 +9,7 @@ use crate::store::Store;
 pub(crate) async fn server(store: Arc<Store>) -> Result<(), Box<dyn Error>> {
 	let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
+
 	loop {
 		let (socket, _) = listener.accept().await?;
 		let tmp_store = store.clone();
@@ -28,19 +29,24 @@ pub(crate) async fn handler(store: Arc<Store>, socket: TcpStream) -> Result<(), 
 	let (owned_reader, owned_writer) = socket.into_split();
 	let mut buf_reader = BufReader::new(owned_reader);
 	let mut buf_writer = BufWriter::new(owned_writer);
-	let mut read_line = String::new();
-	buf_reader.read_line(&mut read_line).await.map_err(|e| e.to_string())?;
-	let read_line = read_line.replace("\n", "");
-	let command_result = CompleteCommand::from_str(&read_line);
-	let command = match command_result {
-		Ok(command) => command,
-		Err(e) => {
-			let write_string = e.to_string() + "\n";
-			buf_writer.write_all(write_string.as_bytes()).await?;
-			return Ok(());
-		}
-	};
+	loop {
+		let mut read_line = String::new();
+		buf_reader.read_line(&mut read_line).await.map_err(|e| e.to_string())?;
+		let read_line = read_line.replace("\n", "");
 
-	command.execute(store, buf_writer).await?;
+		let command_result = CompleteCommand::from_str(&read_line);
+		let command = match command_result {
+			Ok(command) => command,
+			Err(e) => {
+				let write_string = e.to_string() + "\n";
+				buf_writer.write_all(write_string.as_bytes()).await?;
+				buf_writer.flush().await?;
+				return Ok(());
+			}
+		};
+
+		command.execute(store.clone(), &mut buf_writer).await?;
+	}
+
 	Ok(())
 }

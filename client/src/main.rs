@@ -1,12 +1,17 @@
 pub mod commands;
+mod benchmark;
 
 use std::error::Error;
-use std::f32::consts::E;
 
 use std::str::FromStr;
+
 use tokio::net::TcpStream;
-use tokio::io::{AsyncWriteExt, AsyncReadExt, AsyncBufRead, AsyncBufReadExt, BufReader, BufWriter};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 use crate::commands::CompleteCommand;
+
+const CONCURRENT_CONNS: usize = 200;
+
+const BENCH_COUNT: usize = 2_000;
 
 /*
 #[tokio::main]
@@ -152,16 +157,12 @@ fn command_string() -> Result<String, Box<dyn Error>> {
     Ok(String::from(command))
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
-
-
+async fn interactive_mode() {
     loop {
         let socket = TcpStream::connect("127.0.0.1:8080").await.expect("Error during connection");
         let (socket_read, socket_write) = socket.into_split();
         let (mut stream_read, mut stream_write) = (BufReader::new(socket_read), BufWriter::new(socket_write));
-        let mut input = command_string()?;
+        let input = command_string().unwrap();
         println!("Writing => {:?}", input);
         stream_write.write_all((input + "\n").as_bytes()).await.expect("Error during connection write");
         stream_write.flush().await.unwrap();
@@ -171,6 +172,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("=> {:?}", back);
 
     }
+}
 
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // console_subscriber::init();
+
+    let mode_selection = &[
+        "Interactive",
+        "Generate",
+        "Perform Benchmark"
+    ];
+
+    let selection = dialoguer::Select::new()
+        .with_prompt("Select type")
+        .items(mode_selection)
+        .interact()?;
+
+    match selection {
+        0 => {
+            interactive_mode().await;
+        },
+        1 => {
+            benchmark::generate_data().await;
+        },
+        2 => {
+            benchmark::perform_benchmark().await;
+        },
+        _ => {
+            unimplemented!()
+        }
+    }
     Ok(())
 }

@@ -1,22 +1,23 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
-use chashmap::CHashMap;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
+use std::sync::Mutex;
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use crate::record::Record;
 
 pub(crate) struct Store {
-	content: CHashMap<String, Record>,
+	content: Arc<Mutex<HashMap<String, Record>>>,
 	get_counter: AtomicU64,
 	set_counter: AtomicU64,
 	del_counter: AtomicU64,
 	dump_content: RwLock<Option<Arc<String>>>,
-	dump_interval: Arc<Mutex<RefCell<tokio::time::Duration>>>,
-	dumper: Arc<Mutex<Option<JoinHandle<()>>>>,
+	dump_interval: Arc<tokio::sync::Mutex<RefCell<tokio::time::Duration>>>,
+	dumper: Arc<tokio::sync::Mutex<Option<JoinHandle<()>>>>,
 }
 
 async fn dumping_fun(store: Arc<Store>) {
@@ -30,13 +31,13 @@ async fn dumping_fun(store: Arc<Store>) {
 impl Store {
 	pub(crate) async fn new() -> Arc<Self> {
 		let ret = Self {
-			content: CHashMap::new(),
+			content: Arc::new(Mutex::new(HashMap::new())),
 			get_counter: AtomicU64::new(0),
 			set_counter: AtomicU64::new(0),
 			del_counter: AtomicU64::new(0),
 			dump_content: RwLock::new(None),
-			dump_interval: Arc::new(Mutex::new(RefCell::new(Duration::from_secs(10)))),
-			dumper: Arc::new(Mutex::new(None)),
+			dump_interval: Arc::new(tokio::sync::Mutex::new(RefCell::new(Duration::from_secs(10)))),
+			dumper: Arc::new(tokio::sync::Mutex::new(None)),
 		};
 
 		let store = Arc::new(ret);
@@ -51,15 +52,17 @@ impl Store {
 	pub(crate) fn set(&self, key: String, value: String) -> Option<Record> {
 		let new_record = Record::new(key.clone(), value);
 		self.set_counter.fetch_add(1, Ordering::Relaxed);
-		self.content.insert(key, new_record)
+		self.content.lock().unwrap().insert(key, new_record)
 	}
 
 	pub(crate) fn get(&self, key: &str) -> Option<Record> {
-		self.content.get(key).map(|e| e.deref().clone())
+		// self.content.get(key).map(|e| e.deref().clone())
+		self.content.lock().unwrap().get(key).map(|e| e.deref().clone())
 	}
 
 	pub(crate) fn del(&self, key: &str) -> Option<Record> {
-		self.content.remove(key)
+		// self.content.remove(key)
+		self.content.lock().unwrap().remove(key)
 	}
 
 	pub(crate) fn get_counter(&self) -> u64 {
@@ -75,8 +78,8 @@ impl Store {
 	}
 
 	pub(crate) async fn new_dump(&self) -> Arc<String> {
-		let mut json_records = Vec::with_capacity(self.content.len());
-		self.content.clone().into_iter().for_each(|pair| {
+		let mut json_records = Vec::with_capacity(self.content.lock().unwrap().len());
+		self.content.lock().unwrap().clone().into_iter().for_each(|pair| {
 			let record = pair.1;
 			let json_record = record.to_json_record();
 			json_records.push(json_record);

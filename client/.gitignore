@@ -1,2 +1,5 @@
 /target
 .idea/
+bench.txt
+data.txt
+rust-bench.txt

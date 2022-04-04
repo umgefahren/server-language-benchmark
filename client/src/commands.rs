@@ -35,13 +35,13 @@ impl From<CompleteCommand> for String {
     fn from(c: CompleteCommand) -> Self {
         match c {
             CompleteCommand::Get { key } => {
-                format!("GET {:?}", key)
+                format!("GET {}", key)
             }
             CompleteCommand::Set { key, value } => {
-                format!("SET {:?} {:?}", key, value)
+                format!("SET {} {}", key, value)
             }
             CompleteCommand::Del { key } => {
-                format!("DEL {:?}", key)
+                format!("DEL {}", key)
             }
             CompleteCommand::GetCounter => {
                 String::from("GETC")
@@ -59,10 +59,10 @@ impl From<CompleteCommand> for String {
                 String::from("NEWDUMP")
             }
             CompleteCommand::DumpInterval { duration } => {
-                format!("DUMPINTERVAL {:?}h-{:?}m-{:?}s", duration.num_hours(), duration.num_minutes(), duration.num_seconds())
+                format!("DUMPINTERVAL {}h-{}m-{}s", duration.num_hours(), duration.num_minutes(), duration.num_seconds())
             }
             CompleteCommand::SetTTL { key, value, duration } => {
-                format!("SETTTL {:?} {:?} {:?}h-{:?}m-{:?}s", key, value, duration.num_hours(), duration.num_minutes(), duration.num_seconds())
+                format!("SETTTL {} {} {}h-{}m-{}s", key, value, duration.num_hours(), duration.num_minutes(), duration.num_seconds())
             }
         }
     }

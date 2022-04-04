@@ -3,7 +3,7 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio::time::Instant;
 use serde::Serialize;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct Record {
 	key: String,
 	value: String,
