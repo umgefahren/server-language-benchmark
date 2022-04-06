@@ -64,10 +64,10 @@ This command stores the `value` with the corresponding `key`.
 
 ### DEL
 
-The GET command is specified as following
+The DEL command is specified as following
 
 ```
-GET key
+DEL key
 ```
 
 where `key` has to follow the [Key / Value convention](SPEC.md#key--value).
@@ -78,6 +78,12 @@ This command deletes the associated `key` `value` pair if it exists.
 
 ### GETC
 
+Returns the number of performed `GET` commands. (The counter should be atomic)
+
 ### SETC
 
+Returns the number of performed `SET` commands. (The counter should be atomic)
+
 ### DELC
+
+Returns the number of performed `DEL` commands. (The counter should be atomic)
