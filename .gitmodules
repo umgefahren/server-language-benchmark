@@ -1,3 +1,6 @@
 [submodule "C/klib"]
 	path = C/klib
 	url = https://github.com/attractivechaos/klib
+[submodule "C-new/klib"]
+	path = C-new/klib
+	url = https://github.com/attractivechaos/klib.git
