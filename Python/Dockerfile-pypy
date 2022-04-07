@@ -1,0 +1,7 @@
+FROM pypy:latest
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["pypy3", "main.py"]
