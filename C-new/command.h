@@ -7,6 +7,7 @@
 
 #include "klib/kstring.h"
 #include <stdlib.h>
+#include <stdbool.h>
 
 enum CommandType {
     Get,
@@ -27,5 +28,7 @@ struct CompleteCommand {
 struct CompleteCommand * command_parse(kstring_t * input);
 
 void compile_regex();
+
+bool is_counter(struct CompleteCommand * command);
 
 #endif //C_NEW_COMMAND_H

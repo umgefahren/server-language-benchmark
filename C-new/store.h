@@ -7,8 +7,12 @@
 
 #include <stdatomic.h>
 #include <pthread.h>
+#include "command.h"
 #include "klib/khash.h"
 #include "klib/kstring.h"
+
+#define OK 0
+#define COMMAND_IS_INVALID 1
 
 struct Record {
     kstring_t * key;
@@ -38,5 +42,7 @@ unsigned long long store_get_counter(struct Store * store);
 unsigned long long store_set_counter(struct Store * store);
 
 unsigned long long store_del_counter(struct Store * store);
+
+struct Record * store_execute_command(struct Store * store, struct CompleteCommand * command, int * out, unsigned long long * counter_out);
 
 #endif //C_NEW_STORE_H

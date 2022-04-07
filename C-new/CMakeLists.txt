@@ -11,11 +11,14 @@ add_library(command command.c command.h)
 
 add_library(store store.c store.h)
 
+add_library(server server.c server.h)
+
 add_executable(C_new main.c)
 
 target_link_libraries(command string)
 target_link_libraries(store command)
-target_link_libraries(C_new command)
+target_link_libraries(server store command)
+target_link_libraries(C_new command store server)
 
 add_executable(command_test command_test.c)
 target_link_libraries(command_test string command store)

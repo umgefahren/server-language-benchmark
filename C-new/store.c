@@ -2,6 +2,7 @@
 // Created by Hannes Furmans on 06.04.22.
 //
 
+#include <stdbool.h>
 #include "store.h"
 
 struct Record * copy_record(struct Record * kh_value) {
@@ -23,6 +24,8 @@ struct Store * store_init() {
     struct Store * ret = malloc(sizeof(struct Store));
     ret->content = malloc(sizeof(kh_m32_t));
     ret->content = kh_init_m32();
+    ret->content->vals = malloc(sizeof(struct Record *));
+    ret->content->keys = malloc(sizeof(struct kh_m32_s));
     ret->rw_lock = malloc(sizeof(pthread_rwlock_t));
     ret->get_counter = malloc(sizeof(atomic_ullong));
     ret->set_counter = malloc(sizeof(atomic_ullong));
@@ -69,6 +72,11 @@ inline struct Record * store_set(struct Store * store, char * key, char * value)
     }
     int absent;
     k = kh_put_m32(store->content, key, &absent);
+    if (absent) {
+        kh_key(store->content, k) = strdup(key);
+    }
+
+
     kh_value(store->content, k) = record;
     pthread_rwlock_unlock(store->rw_lock);
 
@@ -105,4 +113,45 @@ inline unsigned long long store_set_counter(struct Store * store) {
 
 inline unsigned long long store_del_counter(struct Store * store) {
     return atomic_load(store->del_counter);
+}
+
+struct Record * store_execute_command(struct Store * store, struct CompleteCommand * command, int * out, unsigned long long * counter_out) {
+    if (command->kind == Invalid) {
+        *out = COMMAND_IS_INVALID;
+        return NULL;
+    }
+
+    struct Record * ret = NULL;
+
+    bool free_key = false;
+    bool free_val = false;
+
+    if (command->kind == Get) {
+        ret = store_get(store, ks_str(command->key));
+        free_key = true;
+    } else if (command->kind == Set) {
+        ret = store_set(store, ks_str(command->key), ks_str(command->value));
+        free_key = true,
+        free_val = true;
+    } else if (command->kind == Del) {
+        ret = store_del(store, ks_str(command->key));
+        free_key = true;
+    } else if (command->kind == GetCounter)
+        *counter_out = store_get_counter(store);
+    else if (command->kind == SetCounter)
+        *counter_out = store_set_counter(store);
+    else if (command->kind == DelCounter)
+        *counter_out = store_del_counter(store);
+
+    if (free_key) {
+        free(ks_release(command->key));
+    }
+
+    if (free_val) {
+        free(ks_release(command->value));
+    }
+
+    free(command);
+
+    return ret;
 }

@@ -80,7 +80,7 @@ struct CompleteCommand * command_parse(kstring_t * input) {
                 return ret;
             }
 
-            offset_pointer += offsets[2];
+            offset_pointer = ks_str(stripped) + offsets[2];
             len = ((int) ks_len(stripped)) - offsets[2];
             char * command_value_string = strndup(offset_pointer, len);
 
@@ -159,8 +159,10 @@ struct CompleteCommand * command_parse(kstring_t * input) {
         free(command_type_string);
     }
 
-
-    invalidate_command(ret);
     free(ks_release(stripped));
     return ret;
+}
+
+inline bool is_counter(struct CompleteCommand * command) {
+    return (command->kind == GetCounter || command->kind == SetCounter || command->kind == DelCounter);
 }
