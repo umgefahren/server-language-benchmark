@@ -1,17 +1,17 @@
-pub mod commands;
 mod benchmark;
+pub mod commands;
 
 use std::error::Error;
 
 use std::str::FromStr;
 
-use tokio::net::TcpStream;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 use crate::commands::CompleteCommand;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
+use tokio::net::TcpStream;
 
 const CONCURRENT_CONNS: usize = 200;
 
-const BENCH_COUNT: usize = 10_000;
+const BENCH_COUNT: usize = 100_000;
 
 /*
 #[tokio::main]
@@ -56,7 +56,7 @@ fn get_duration() -> Result<chrono::Duration, Box<dyn std::error::Error>> {
             let num = i64::from_str(input);
             match num {
                 Ok(_) => Ok(()),
-                Err(e) => Err(e.to_string())
+                Err(e) => Err(e.to_string()),
             }
         })
         .interact()?;
@@ -68,7 +68,7 @@ fn get_duration() -> Result<chrono::Duration, Box<dyn std::error::Error>> {
             let num = i64::from_str(input);
             match num {
                 Ok(_) => Ok(()),
-                Err(e) => Err(e.to_string())
+                Err(e) => Err(e.to_string()),
             }
         })
         .interact()?;
@@ -80,7 +80,7 @@ fn get_duration() -> Result<chrono::Duration, Box<dyn std::error::Error>> {
             let num = i64::from_str(input);
             match num {
                 Ok(_) => Ok(()),
-                Err(e) => Err(e.to_string())
+                Err(e) => Err(e.to_string()),
             }
         })
         .interact()?;
@@ -102,7 +102,7 @@ fn command_string() -> Result<String, Box<dyn Error>> {
         "GetDump",
         "NewDump",
         "DumpInterval",
-        "SetTTL"
+        "SetTTL",
     ];
 
     let selection = dialoguer::Select::new()
@@ -111,23 +111,16 @@ fn command_string() -> Result<String, Box<dyn Error>> {
         .interact()?;
 
     let command = match selection {
-        0 => {
-            CompleteCommand::Get {
-                key: get_key()?
-            }
-        },
+        0 => CompleteCommand::Get { key: get_key()? },
         1 => {
             let key = get_key()?;
             let value = get_value()?;
-            CompleteCommand::Set {
-                key,
-                value
-            }
-        },
+            CompleteCommand::Set { key, value }
+        }
         2 => {
             let key = get_key()?;
             CompleteCommand::Del { key }
-        },
+        }
         3 => CompleteCommand::GetCounter,
         4 => CompleteCommand::SetCounter,
         5 => CompleteCommand::DelCounter,
@@ -135,10 +128,8 @@ fn command_string() -> Result<String, Box<dyn Error>> {
         7 => CompleteCommand::NewDump,
         8 => {
             let duration = get_duration()?;
-            CompleteCommand::DumpInterval {
-                duration
-            }
-        },
+            CompleteCommand::DumpInterval { duration }
+        }
         9 => {
             let key = get_key()?;
             let value = get_key()?;
@@ -146,7 +137,7 @@ fn command_string() -> Result<String, Box<dyn Error>> {
             CompleteCommand::SetTTL {
                 key,
                 value,
-                duration
+                duration,
             }
         }
         _ => {
@@ -159,18 +150,23 @@ fn command_string() -> Result<String, Box<dyn Error>> {
 
 async fn interactive_mode() {
     loop {
-        let socket = TcpStream::connect("127.0.0.1:8080").await.expect("Error during connection");
+        let socket = TcpStream::connect("127.0.0.1:8080")
+            .await
+            .expect("Error during connection");
         let (socket_read, socket_write) = socket.into_split();
-        let (mut stream_read, mut stream_write) = (BufReader::new(socket_read), BufWriter::new(socket_write));
+        let (mut stream_read, mut stream_write) =
+            (BufReader::new(socket_read), BufWriter::new(socket_write));
         let input = command_string().unwrap();
         println!("Writing => {:?}", input);
-        stream_write.write_all((input + "\n").as_bytes()).await.expect("Error during connection write");
+        stream_write
+            .write_all((input + "\n").as_bytes())
+            .await
+            .expect("Error during connection write");
         stream_write.flush().await.unwrap();
         println!("Starting to read");
         let mut back = String::new();
         stream_read.read_line(&mut back).await.expect("Error");
         println!("=> {:?}", back);
-
     }
 }
 
@@ -178,11 +174,7 @@ async fn interactive_mode() {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // console_subscriber::init();
 
-    let mode_selection = &[
-        "Interactive",
-        "Generate",
-        "Perform Benchmark"
-    ];
+    let mode_selection = &["Interactive", "Generate", "Perform Benchmark"];
 
     let selection = dialoguer::Select::new()
         .with_prompt("Select type")
@@ -192,13 +184,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match selection {
         0 => {
             interactive_mode().await;
-        },
+        }
         1 => {
             benchmark::generate_data().await;
-        },
+        }
         2 => {
             benchmark::perform_benchmark().await;
-        },
+        }
         _ => {
             unimplemented!()
         }
