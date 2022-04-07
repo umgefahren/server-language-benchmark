@@ -1,15 +1,15 @@
-use tokio::net::{TcpStream, ToSocketAddrs};
-use tokio::time::Instant;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use std::collections::HashSet;
-use rand::{Rng, thread_rng};
+use crate::{CompleteCommand, BENCH_COUNT, CONCURRENT_CONNS};
 use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::fs::File;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{TcpStream, ToSocketAddrs};
 use tokio::sync::Mutex;
-use crate::{BENCH_COUNT, CompleteCommand, CONCURRENT_CONNS};
-use serde::{Serialize, Deserialize};
+use tokio::time::Instant;
 
 fn generate_string() -> String {
     thread_rng()
@@ -19,18 +19,25 @@ fn generate_string() -> String {
         .collect()
 }
 
-async fn perform_sequence<A: ToSocketAddrs>(addr: A, key: String, value: String, conn_mutex: Arc<Mutex<()>>, start: Arc<Instant>) -> StandardSequenceDuration {
-    let set_command = CompleteCommand::Set {key: key.clone(), value: value.clone()};
+async fn perform_sequence<A: ToSocketAddrs>(
+    addr: A,
+    key: String,
+    value: String,
+    conn_mutex: Arc<Mutex<()>>,
+    start: Arc<Instant>,
+) -> StandardSequenceDuration {
+    let set_command = CompleteCommand::Set {
+        key: key.clone(),
+        value: value.clone(),
+    };
 
     // println!("Key => {:?} Value => {:?}", key, value);
 
-
     let set_string = String::from(set_command) + "\n";
-    let get_command = CompleteCommand::Get {key: key.clone()};
+    let get_command = CompleteCommand::Get { key: key.clone() };
     let get_string = String::from(get_command) + "\n";
-    let del_command = CompleteCommand::Del {key: key.clone()};
+    let del_command = CompleteCommand::Del { key: key.clone() };
     let del_string = String::from(del_command) + "\n";
-
 
     let m = conn_mutex.lock().await;
 
@@ -92,7 +99,6 @@ async fn perform_sequence<A: ToSocketAddrs>(addr: A, key: String, value: String,
     assert_eq!(strip(out_buf.clone()), value);
     out_buf.clear();
 
-
     drop(socket);
     std::mem::drop(m);
 
@@ -118,10 +124,11 @@ pub async fn generate_data() {
     let mut first_names = HashSet::new();
     let mut last_names = HashSet::new();
     let mut file = tokio::fs::File::create("data.txt").await.unwrap();
-    file.write_all(format!("{:?}\n", BENCH_COUNT).as_bytes()).await.unwrap();
+    file.write_all(format!("{:?}\n", BENCH_COUNT).as_bytes())
+        .await
+        .unwrap();
     for _ in 0..BENCH_COUNT {
         let first_name = loop {
-
             let mut first_name = generate_string();
             first_name = strip(first_name.clone());
             if !first_names.contains(&first_name) {
@@ -130,7 +137,7 @@ pub async fn generate_data() {
             }
         };
         let last_name = loop {
-            let mut last_name= generate_string();
+            let mut last_name = generate_string();
             last_name = strip(last_name.clone());
             if !last_names.contains(&last_name) {
                 last_names.insert(last_name.clone());
@@ -143,7 +150,6 @@ pub async fn generate_data() {
     file.flush().await.unwrap();
 }
 
-
 pub async fn perform_benchmark() {
     let file = tokio::fs::File::open("data.txt").await.unwrap();
     let mut reader = BufReader::new(file);
@@ -153,7 +159,6 @@ pub async fn perform_benchmark() {
     let count = usize::from_str(&string_buf).unwrap();
     string_buf.clear();
     let mut entries = Vec::with_capacity(count);
-
 
     let connection_mutexes = vec![Arc::new(Mutex::new(())); CONCURRENT_CONNS];
 

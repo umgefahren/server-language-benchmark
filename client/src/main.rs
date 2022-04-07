@@ -6,12 +6,16 @@ use std::error::Error;
 use std::str::FromStr;
 
 use crate::commands::CompleteCommand;
+use clap::{ArgMatches, Command};
+#[macro_use]
+extern crate lazy_static;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 use tokio::net::TcpStream;
 
 const CONCURRENT_CONNS: usize = 200;
 
-const BENCH_COUNT: usize = 100_000;
+lazy_static! {}
+const BENCH_COUNT: usize = 100000;
 
 /*
 #[tokio::main]
@@ -173,7 +177,28 @@ async fn interactive_mode() {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // console_subscriber::init();
+    let matches: ArgMatches = Command::new("Benchmark client")
+        .about("This is the client for benchmarking the servers and interacting with them.")
+        .after_help("With this client you can interact with the server to \n1. execute manual commands\n2. generate benchmark data\n3. benchmark your server")
+        .author("Some people from ETH Zurich")
+        .version("0.1.0")
+        .subcommand(Command::new("interactive").about("Select what you want to do in an interactive command line interface."))
+        .subcommand(Command::new("execute").about("Enter the manual command execution mode, where you will be able to send single requests to the server in an interactive command line interface"))
+        .subcommand(Command::new("benchmark").about("Start the benchmark which dumps files into the 'data.txt' file."))
+        .subcommand(Command::new("generate").about("Generate new test data, will probably be deprecated soon"))
+        .get_matches();
 
+    match matches.subcommand() {
+        Some(("interactive", _)) => interactive().await?,
+        Some(("benchmark", _)) => benchmark::perform_benchmark().await,
+        Some(("execute", _)) => interactive_mode().await,
+        Some(("generate", _)) => benchmark::generate_data().await,
+        _ => interactive().await,
+    }
+    Ok(())
+}
+
+async fn interactive() -> Result<(), Box<dyn std::error::Error>> {
     let mode_selection = &["Interactive", "Generate", "Perform Benchmark"];
 
     let selection = dialoguer::Select::new()
