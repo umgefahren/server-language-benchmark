@@ -1,0 +1,8 @@
+name: server-benchmark-crystal
+version: 0.1.0
+author: vypxl
+
+targets:
+  server:
+    main: src/main.cr
+
