@@ -1,9 +1,12 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.18)
 project(C_new C)
 
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
 
 include(CTest)
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 add_library(string klib/kstring.h klib/kstring.c)
 
@@ -16,8 +19,8 @@ add_library(server server.c server.h)
 add_executable(C_new main.c)
 
 target_link_libraries(command string)
-target_link_libraries(store command)
-target_link_libraries(server store command)
+target_link_libraries(store command Threads::Threads)
+target_link_libraries(server store command Threads::Threads)
 target_link_libraries(C_new command store server)
 
 add_executable(command_test command_test.c)
