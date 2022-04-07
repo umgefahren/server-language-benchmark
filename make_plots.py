@@ -5,17 +5,6 @@ from datetime import timedelta
 
 import matplotlib.pyplot as plt
 
-# langs = [
-#         # "Rust",
-#         "Elixir",
-#         "Java",
-#         "Go",
-#         "Ruby-yjit",
-#         "Ruby",
-#         # "Swift",
-#         "Crystal"
-#         ]
-
 def read_file(path):
     with open(path) as f:
         return [json.loads(l) for l in f.readlines()]
