@@ -1,4 +1,4 @@
-use crate::{CompleteCommand, BENCH_COUNT, CONCURRENT_CONNS};
+use crate::{idle_till_server_connection, CompleteCommand, BENCH_COUNT, CONCURRENT_CONNS};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -178,6 +178,8 @@ pub async fn perform_benchmark() {
 
     let mut up = 0;
     let mut handlers = Vec::with_capacity(count);
+    let addr = "127.0.0.1:8080";
+    idle_till_server_connection(addr).await;
     for e in entries {
         let key = e.0;
         let value = e.1;
@@ -191,7 +193,7 @@ pub async fn perform_benchmark() {
         let new_wrapper = start_wrapper.clone();
         let handler = tokio::spawn(async move {
             // sleep(core::time::Duration::from_millis(100)).await;
-            perform_sequence("127.0.0.1:8080", key, value, ass_conn_mutex, new_wrapper).await
+            perform_sequence(addr, key, value, ass_conn_mutex, new_wrapper).await
         });
         handlers.push(handler);
     }

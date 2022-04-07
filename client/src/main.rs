@@ -152,9 +152,32 @@ fn command_string() -> Result<String, Box<dyn Error>> {
     Ok(String::from(command))
 }
 
-async fn interactive_mode() {
+async fn idle_till_server_connection(addr: &str) {
+    let mut failed_connection_before = false;
     loop {
-        let socket = TcpStream::connect("127.0.0.1:8080")
+        match TcpStream::connect(addr).await {
+            Ok(connection) => {
+                drop(connection);
+                break;
+            }
+            Err(err) => match err.kind() {
+                std::io::ErrorKind::ConnectionRefused => {
+                    if !failed_connection_before {
+                        println!("Waiting for server to start...");
+                        failed_connection_before = true;
+                    }
+                }
+                e => panic!("Unexpected error when trying to connect to server: {:?}", e),
+            },
+        }
+    }
+}
+
+async fn interactive_mode() {
+    let addr = "127.0.0.1:8080";
+    idle_till_server_connection(addr).await;
+    loop {
+        let socket = TcpStream::connect(addr)
             .await
             .expect("Error during connection");
         let (socket_read, socket_write) = socket.into_split();
@@ -193,7 +216,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(("benchmark", _)) => benchmark::perform_benchmark().await,
         Some(("execute", _)) => interactive_mode().await,
         Some(("generate", _)) => benchmark::generate_data().await,
-        _ => interactive().await,
+        _ => interactive().await?,
     }
     Ok(())
 }
