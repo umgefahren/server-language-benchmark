@@ -19,6 +19,6 @@ fileprivate let disallowedCharacters: CharacterSet = {
 
 extension StringProtocol {
     var isValidKeyOrValue: Bool {
-        self.rangeOfCharacter(from: disallowedCharacters) == nil
+        self.count > 0 && self.rangeOfCharacter(from: disallowedCharacters) == nil
     }
 }
