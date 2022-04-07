@@ -33,7 +33,15 @@ struct Store * store_init() {
     ret->content->vals = malloc(sizeof(struct Record *));
     ret->content->keys = malloc(sizeof(struct kh_m32_s));
     ret->rw_lock = malloc(sizeof(pthread_rwlock_t));
-    pthread_rwlock_init(ret->rw_lock, NULL);
+    pthread_rwlockattr_t * rwlockattr = malloc(sizeof(pthread_rwlockattr_t));
+    pthread_rwlockattr_init(rwlockattr);
+    pthread_rwlockattr_setpshared(rwlockattr, PTHREAD_PROCESS_SHARED);
+    int lock_init_result = pthread_rwlock_init(ret->rw_lock, rwlockattr);
+    if (lock_init_result != 0) {
+        printf("Error %i\n", lock_init_result);
+        perror("Couldn't init rwlock correctly");
+        exit(1);
+    }
     ret->get_counter = malloc(sizeof(atomic_ullong));
     ret->set_counter = malloc(sizeof(atomic_ullong));
     ret->del_counter = malloc(sizeof(atomic_ullong));
@@ -50,7 +58,6 @@ inline struct Record * store_get(struct Store * store, char * key) {
     }
 
     khint_t k = kh_get_m32(store->content, key);
-    printf("GET %i %s\n", k, key);
     if (k != kh_end(store->content)) {
         struct Record * kh_value = kh_value(store->content, k);
         ret = copy_record(kh_value);
@@ -91,7 +98,6 @@ inline struct Record * store_set(struct Store * store, char * key, char * value)
     int absent;
     // char * internal_key = strdup(key);
     k = kh_put_m32(store->content, key, &absent);
-    printf("SET %i %s\n", k, key);
     if (absent) {
         kh_key(store->content, k) = strdup(key);
     }
@@ -116,7 +122,6 @@ inline struct Record * store_del(struct Store * store, char * key) {
         exit(1);
     }
     khint_t k = kh_get_m32(store->content, key);
-    printf("DEL %i %s\n", k, key);
     if (k != kh_end(store->content)) {
         struct Record * kh_value = kh_value(store->content, k);
         ret = kh_value;
@@ -153,14 +158,14 @@ struct Record * store_execute_command(struct Store * store, struct CompleteComma
     bool free_val = false;
 
     if (command->kind == Get) {
-        ret = store_get(store, ks_str(command->key));
+        ret = store_get(store, ks_str(&command->key));
         free_key = true;
     } else if (command->kind == Set) {
-        ret = store_set(store, ks_str(command->key), ks_str(command->value));
+        ret = store_set(store, strdup(ks_str(&command->key)), strdup(ks_str(&command->value)));
         free_key = true,
         free_val = true;
     } else if (command->kind == Del) {
-        ret = store_del(store, ks_str(command->key));
+        ret = store_del(store, ks_str(&command->key));
         free_key = true;
     } else if (command->kind == GetCounter)
         *counter_out = store_get_counter(store);
@@ -170,11 +175,11 @@ struct Record * store_execute_command(struct Store * store, struct CompleteComma
         *counter_out = store_del_counter(store);
 
     if (free_key) {
-        free(ks_release(command->key));
+        free(ks_release(&command->key));
     }
 
     if (free_val) {
-        free(ks_release(command->value));
+        free(ks_release(&command->value));
     }
 
     free(command);

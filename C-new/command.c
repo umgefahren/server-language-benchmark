@@ -71,14 +71,33 @@ struct CompleteCommand * command_parse(kstring_t input) {
             char * offset_pointer = ks_str(&stripped) + offsets[1];
             char * command_key_string = strndup(offset_pointer, len);
 
-            // strncpy(command_key_string, offset_pointer, len);
+            /*
+            char * command_key_string = NULL;
+            kstring_t command_k_string = { 0, 0, NULL };
+
+            int counter = 0;
+
+            while (1) {
+                char character = ks_str(&stripped)[offsets[1] + counter++];
+                if (character == ' ') {
+                    // puts(ks_str(&command_k_string));
+                    break;
+                }
+                kputc(character, &command_k_string);
+            }
+            command_key_string = ks_str(&command_k_string);
+
+            free(ks_release(&command_k_string));
+             */
+            strncpy(command_key_string, offset_pointer, len);
+
 
             int comp_result = regexec(&regex, command_key_string, 0, NULL, 0);
 
             if (comp_result == REG_NOMATCH) {
                 invalidate_command(ret);
                 free(command_key_string);
-                free(ks_release(&stripped));
+                // free(ks_release(&stripped));
                 return ret;
             }
 
@@ -92,16 +111,14 @@ struct CompleteCommand * command_parse(kstring_t input) {
                 invalidate_command(ret);
                 free(command_key_string);
                 free(command_value_string);
-                free(ks_release(&stripped));
+                // free(ks_release(&stripped));
                 return ret;
             }
 
-            kstring_t * key = malloc(sizeof(kstring_t));
-            key->s = malloc(sizeof(char) * 1);
-            kstring_t * value = malloc(sizeof(kstring_t));
-            value->s = malloc(sizeof(char) * 1);
-            kputs(command_key_string, key);
-            kputs(command_value_string, value);
+            kstring_t key = { 0, 0, NULL };
+            kstring_t value = { 0, 0, NULL };
+            kputs(command_key_string, &key);
+            kputs(command_value_string, &value);
             free(command_key_string);
             free(command_value_string);
             ret->key = key;
@@ -109,7 +126,7 @@ struct CompleteCommand * command_parse(kstring_t input) {
         } else {
             invalidate_command(ret);
             free(command_type_string);
-            free(ks_release(&stripped));
+            // free(ks_release(&stripped));
             return ret;
         }
     } else if (nums == 2) {
@@ -123,13 +140,12 @@ struct CompleteCommand * command_parse(kstring_t input) {
             invalidate_command(ret);
             free(command_type_string);
             free(command_key_string);
-            free(ks_release(&stripped));
+            // free(ks_release(&stripped));
             return ret;
         }
 
-        kstring_t *key = malloc(sizeof(kstring_t));
-        key->s = malloc(sizeof(char) * 2);
-        kputs(command_key_string, key);
+        kstring_t key = { 0, 0, NULL};
+        kputs(command_key_string, &key);
 
         ret->key = key;
 
@@ -139,9 +155,9 @@ struct CompleteCommand * command_parse(kstring_t input) {
             ret->kind = Del;
         } else {
             invalidate_command(ret);
-            free(ks_release(ret->key));
+            free(ks_release(&ret->key));
             free(command_type_string);
-            free(ks_release(&stripped));
+            // free(ks_release(&stripped));
             return ret;
         }
 
@@ -162,7 +178,7 @@ struct CompleteCommand * command_parse(kstring_t input) {
         free(command_type_string);
     }
 
-    free(ks_release(&stripped));
+    // free(ks_release(&stripped));
     return ret;
 }
 

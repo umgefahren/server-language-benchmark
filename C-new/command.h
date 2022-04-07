@@ -21,8 +21,8 @@ enum CommandType {
 
 struct CompleteCommand {
     enum CommandType kind;
-    kstring_t * key;
-    kstring_t * value;
+    kstring_t key;
+    kstring_t value;
 };
 
 struct CompleteCommand * command_parse(kstring_t input);

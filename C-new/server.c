@@ -50,8 +50,7 @@ int server_init() {
 void * handler_function(void * void_params) {
     struct handler_params * params = void_params;
 
-    size_t buffer_size = 70;
-    char * buffer = malloc(sizeof(char) * buffer_size);
+
     // int client_fd = params->client_fd;
 
     FILE * client_file = params->client_fd;
@@ -68,6 +67,9 @@ void * handler_function(void * void_params) {
     int write_out;
 
     while (1) {
+        size_t buffer_size = 70;
+        char * buffer = malloc(sizeof(char) * buffer_size);
+
         unsigned long long counter_out;
         struct Record * record;
         int out;
@@ -117,6 +119,7 @@ void * handler_function(void * void_params) {
             break;
         } else {
             fflush(client_file);
+            free(buffer);
         }
     }
 
@@ -137,7 +140,6 @@ int server_loop(int server_fd, struct Store * store) {
         params->store = store;
 
         int connfd = accept(server_fd, (struct sockaddr *) &cli, &len);
-        printf("File descriptor %i\n", connfd);
         if (connfd < 0) {
             perror("sever accept failed...");
             exit(1);
