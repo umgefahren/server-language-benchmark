@@ -95,7 +95,7 @@ actor Server {
                         
                         if (newSocketFD < 0) {
                             print("Could not accept connection")
-                            return
+                            throw CancellationError()
                         }
                         
                         
