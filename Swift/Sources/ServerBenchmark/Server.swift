@@ -28,7 +28,12 @@ actor Server {
         self.store = store
         
         
+        #if os(macOS)
         self.socketFD = socket(Self.domain, SOCK_STREAM, 0)
+        #elseif os(Linux)
+        self.socketFD = socket(Self.domain, Int32(SOCK_STREAM.rawValue), 0)
+        #endif
+        
         if self.socketFD == -1 {
             print("Could not create socket")
             return nil
