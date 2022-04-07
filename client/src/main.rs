@@ -161,7 +161,7 @@ async fn idle_till_server_connection(addr: &str) {
                 break;
             }
             Err(err) => match err.kind() {
-                std::io::ErrorKind::ConnectionRefused => {
+                std::io::ErrorKind::ConnectionRefused | std::io::ErrorKind::ConnectionReset => {
                     if !failed_connection_before {
                         println!("Waiting for server to start...");
                         failed_connection_before = true;
