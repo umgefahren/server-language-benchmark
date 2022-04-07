@@ -7,9 +7,8 @@
 #include "klib/kstring.h"
 
 int main() {
-    kstring_t * input = malloc(sizeof(kstring_t));
-    input->s = malloc(sizeof(char) * 2);
-    kputs("SET key value\n", input);
+    kstring_t input = { 0, 0, NULL };
+    kputs("SET key value\n", &input);
     compile_regex();
     struct CompleteCommand * command = command_parse(input);
 

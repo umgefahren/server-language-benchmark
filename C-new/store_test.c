@@ -20,8 +20,8 @@ int main() {
 
     ret = store_get(store, key);
 
-    assert(strcmp(ks_str(ret->value), value) == 0);
-    puts(ks_str(ret->value));
+    assert(strcmp(ks_str(&ret->value), value) == 0);
+    puts(ks_str(&ret->value));
 
     return 0;
 }

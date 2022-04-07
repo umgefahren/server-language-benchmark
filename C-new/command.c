@@ -27,37 +27,39 @@ void invalidate_command(struct CompleteCommand * command) {
     command->kind = Invalid;
 }
 
-kstring_t * strip(kstring_t * input) {
-    kstring_t * ret = malloc(sizeof(kstring_t));
-    ret->s = malloc(sizeof(char)*2);
-    size_t len = ks_len(input);
+kstring_t strip(kstring_t input) {
+    // kstring_t ret =k ;
+    kstring_t ret = { 0, 0, NULL };
+    // ret->s = malloc(sizeof(char)*2);
+
+    size_t len = ks_len(&input);
     for (size_t i = 0; i < len; i++) {
-        char character = ks_str(input)[i];
+        char character = ks_str(&input)[i];
         if (character == '\n')
             break;
-        kputc(character, ret);
+        kputc(character, &ret);
     }
-    // free(ks_release(input));
+    free(ks_release(&input));
     return ret;
 }
 
-struct CompleteCommand * command_parse(kstring_t * input) {
+struct CompleteCommand * command_parse(kstring_t input) {
     struct CompleteCommand * ret = malloc(sizeof(struct CompleteCommand));
     invalidate_command(ret);
 
-    kstring_t * stripped = strip(input);
+    kstring_t stripped = strip(input);
 
 
     int nums = 0;
 
-    int * offsets = ksplit(stripped, ' ', &nums);
+    int * offsets = ksplit(&stripped, ' ', &nums);
 
     char * command_type_string = NULL;
 
     if (nums >= 1) {
         command_type_string = malloc(sizeof(char) * offsets[1]);
 
-        strncpy(command_type_string, ks_str(stripped), offsets[1]);
+        strncpy(command_type_string, ks_str(&stripped), offsets[1]);
     }
 
     if (nums == 3) {
@@ -66,7 +68,7 @@ struct CompleteCommand * command_parse(kstring_t * input) {
             free(command_type_string);
 
             int len = offsets[2] - offsets[1];
-            char * offset_pointer = ks_str(stripped) + offsets[1];
+            char * offset_pointer = ks_str(&stripped) + offsets[1];
             char * command_key_string = strndup(offset_pointer, len);
 
             // strncpy(command_key_string, offset_pointer, len);
@@ -76,12 +78,12 @@ struct CompleteCommand * command_parse(kstring_t * input) {
             if (comp_result == REG_NOMATCH) {
                 invalidate_command(ret);
                 free(command_key_string);
-                free(ks_release(stripped));
+                free(ks_release(&stripped));
                 return ret;
             }
 
-            offset_pointer = ks_str(stripped) + offsets[2];
-            len = ((int) ks_len(stripped)) - offsets[2];
+            offset_pointer = ks_str(&stripped) + offsets[2];
+            len = ((int) ks_len(&stripped)) - offsets[2];
             char * command_value_string = strndup(offset_pointer, len);
 
             comp_result = regexec(&regex, command_value_string, 0, NULL, 0);
@@ -89,7 +91,8 @@ struct CompleteCommand * command_parse(kstring_t * input) {
             if (comp_result == REG_NOMATCH) {
                 invalidate_command(ret);
                 free(command_key_string);
-                free(ks_release(stripped));
+                free(command_value_string);
+                free(ks_release(&stripped));
                 return ret;
             }
 
@@ -106,12 +109,12 @@ struct CompleteCommand * command_parse(kstring_t * input) {
         } else {
             invalidate_command(ret);
             free(command_type_string);
-            free(ks_release(stripped));
+            free(ks_release(&stripped));
             return ret;
         }
     } else if (nums == 2) {
-        int len = ((int) ks_len(stripped)) - offsets[1];
-        char *offset_pointer = ks_str(stripped) + offsets[1];
+        int len = ((int) ks_len(&stripped)) - offsets[1];
+        char *offset_pointer = ks_str(&stripped) + offsets[1];
         char *command_key_string = strndup(offset_pointer, len);
 
         int comp_result = regexec(&regex, command_key_string, 0, NULL, 0);
@@ -120,7 +123,7 @@ struct CompleteCommand * command_parse(kstring_t * input) {
             invalidate_command(ret);
             free(command_type_string);
             free(command_key_string);
-            free(ks_release(stripped));
+            free(ks_release(&stripped));
             return ret;
         }
 
@@ -138,7 +141,7 @@ struct CompleteCommand * command_parse(kstring_t * input) {
             invalidate_command(ret);
             free(ks_release(ret->key));
             free(command_type_string);
-            free(ks_release(stripped));
+            free(ks_release(&stripped));
             return ret;
         }
 
@@ -159,7 +162,7 @@ struct CompleteCommand * command_parse(kstring_t * input) {
         free(command_type_string);
     }
 
-    free(ks_release(stripped));
+    free(ks_release(&stripped));
     return ret;
 }
 

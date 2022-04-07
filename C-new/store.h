@@ -15,8 +15,8 @@
 #define COMMAND_IS_INVALID 1
 
 struct Record {
-    kstring_t * key;
-    kstring_t * value;
+    kstring_t key;
+    kstring_t value;
 };
 
 KHASH_MAP_INIT_STR(m32, struct Record *)

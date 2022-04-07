@@ -13,7 +13,7 @@
 #include "server.h"
 
 struct handler_params {
-    int client_fd;
+    FILE * client_fd;
     struct Store * store;
 };
 
@@ -39,7 +39,7 @@ int server_init() {
         exit(1);
     }
 
-    if ((listen(socket_fd, 5) != 0)) {
+    if ((listen(socket_fd, 1000) != 0)) {
         perror("Failed to listen to socket");
         exit(1);
     }
@@ -52,9 +52,14 @@ void * handler_function(void * void_params) {
 
     size_t buffer_size = 70;
     char * buffer = malloc(sizeof(char) * buffer_size);
-    int client_fd = params->client_fd;
+    // int client_fd = params->client_fd;
 
-    FILE * client_file = fdopen(client_fd, "r+w");
+    FILE * client_file = params->client_fd;
+
+    if (client_file == NULL) {
+        perror("failed to create client file in inner loop");
+        exit(1);
+    }
 
     struct Store * store = params->store;
 
@@ -69,14 +74,13 @@ void * handler_function(void * void_params) {
 
         if (getline(&buffer, &buffer_size, client_file) < 0) {
             fclose(client_file);
-            close(client_fd);
-            free(void_params);
+            // close(client_fd);
             free(buffer);
             break;
         }
-        kstring_t * buff_kstr = malloc(sizeof(kstring_t));
-        buff_kstr->s = malloc(sizeof(char) * 1);
-        kputs(buffer, buff_kstr);
+        buffer = realloc(buffer, sizeof(char) * buffer_size);
+        kstring_t buff_kstr = {0, 0, NULL};
+        kputs(buffer, &buff_kstr);
         struct CompleteCommand * command = command_parse(buff_kstr);
 
         bool is_valid = true;
@@ -88,23 +92,37 @@ void * handler_function(void * void_params) {
         record = store_execute_command(store, command, &out, &counter_out);
         if (counter_command) {
             write_out = fprintf(client_file, "%llu\n", counter_out);
-        } else if (record == NULL && is_valid) {
+            fflush(client_file);
+        } else if (record == NULL) {
             write_out = fputs("not found\n", client_file);
+            fflush(client_file);
         } else if (is_valid) {
-            write_out = fputs(ks_str(record->value), client_file);
+            write_out = fputs(ks_str(&record->value), client_file);
             fputc('\n', client_file);
+            fflush(client_file);
+            // free(ks_release(&record->key));
+            free(record->key.s);
+            // free(ks_release(&record->value));
+            free(record->value.s);
             free(record);
         } else {
             write_out = fputs("invalid command\n", client_file);
+            fflush(client_file);
         }
 
         if (write_out < 0) {
             perror("Closing connection");
             fclose(client_file);
-            close(client_fd);
+            free(buffer);
             break;
+        } else {
+            fflush(client_file);
         }
     }
+
+    // free(params->client_fd);
+    free(void_params);
+    pthread_exit(NULL);
 
     return NULL;
 };
@@ -119,12 +137,18 @@ int server_loop(int server_fd, struct Store * store) {
         params->store = store;
 
         int connfd = accept(server_fd, (struct sockaddr *) &cli, &len);
+        printf("File descriptor %i\n", connfd);
         if (connfd < 0) {
             perror("sever accept failed...");
             exit(1);
         }
 
-        params->client_fd = connfd;
+        FILE * descriptor = fdopen(connfd, "r+");
+        if (descriptor == NULL) {
+            perror("Failed to create descriptor from file");
+            exit(1);
+        }
+        params->client_fd = descriptor;
         if (pthread_create(new_thread, NULL, handler_function, params) != 0) {
             perror("Creation of new thread failed");
             exit(1);

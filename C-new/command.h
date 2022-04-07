@@ -25,7 +25,7 @@ struct CompleteCommand {
     kstring_t * value;
 };
 
-struct CompleteCommand * command_parse(kstring_t * input);
+struct CompleteCommand * command_parse(kstring_t input);
 
 void compile_regex();
 
