@@ -11,4 +11,4 @@ WORKDIR /usr/bin/
 
 COPY --from=builder /usr/local/bin/app /usr/bin/app
 
-CMD [ "./usr/bin/app" ]
+CMD [ "/usr/bin/app" ]
