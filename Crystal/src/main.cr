@@ -28,12 +28,15 @@ module ServerBenchmark
       case op
       when "GET"
         return "invalid command" if cmd.size < 2
+        @getc.add 1
         @hashmap[cmd[1]]
       when "SET"
         return "invalid command" if cmd.size < 3
+        @setc.add 1
         @hashmap[cmd[1]] = cmd[2]
       when "DEL"
         return "invalid command" if cmd.size < 2
+        @delc.add 1
         @hashmap.delete cmd[1]
       when "GETC"
         @getc.get
