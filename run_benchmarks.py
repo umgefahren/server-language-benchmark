@@ -73,14 +73,32 @@ def main():
         os.mkdir("results")
 
     d = docker.from_env()
-    setup_client()
 
-    langs = get_langs()
-    for (lang, modes) in langs:
-        log(f"Beginning benchmarking {lang}")
-        run_benchmark(d, lang, modes)
+    if len(sys.argv) >= 2:
+        if (sys.argv[1] == "help"):
+            print("""Usage:    ./run_benchmarks.py [<language> [mode]]
+Examples: ./run_benchmarks.py Ruby yjit
+          ./run_benchmarks.py Java
+          ./run_benchmarks.py""")
+            return
+        lang = sys.argv[1]
 
-    log("All benchmarks have finished")
+        setup_client()
+        if len(sys.argv) >= 3:
+            mode = sys.argv[2]
+            log(f"Benchmarking {lang} {mode}")
+            run_benchmark(d, lang, [f"Dockerfile-{mode}"])
+        else:
+            log(f"Benchmarking {lang}")
+            run_benchmark(d, lang, [f"Dockerfile"])
+    else:
+        langs = get_langs()
+        setup_client()
+        for (lang, modes) in langs:
+            log(f"Beginning benchmarking {lang}")
+            run_benchmark(d, lang, modes)
+
+        log("All benchmarks have finished")
 
 
 if __name__ == "__main__":
