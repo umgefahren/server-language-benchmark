@@ -10,16 +10,19 @@ void main() async {
   HashMap<String, String> map = HashMap();
   AtomicInt getc = AtomicInt();
   AtomicInt setc = AtomicInt();
+  AtomicInt delc = AtomicInt();
 
   // listen for client connections to the server
   server.listen((client) {
-    handleConnection(client, map, getc, setc);
+    handleConnection(client, map, getc, setc, delc);
   });
-  print("Started server at '" + addr!.address + "'");
+  if (addr != null) {
+  print("Started server at '" + addr.address + "'");
   print("Listening at port 8080 ...");
+  }
 }
 
-void handleConnection(Socket client, HashMap<String, String> map, AtomicInt getc, AtomicInt setc) {
+void handleConnection(Socket client, HashMap<String, String> map, AtomicInt getc, AtomicInt setc, AtomicInt delc) {
   // listen for events from the client
   client.listen(
 
@@ -30,6 +33,9 @@ void handleConnection(Socket client, HashMap<String, String> map, AtomicInt getc
         client.write(getc.number.toString() + "\n");
       } else if (messageArr[0] == "SETC") {
         client.write(setc.number.toString() + "\n");
+      }
+      else if (messageArr[0] == "DELC") {
+        client.write(delc.number.toString() + "\n");
       }
       else if (messageArr[0] == "GET") {
         String? val = map[messageArr[1]];
@@ -47,9 +53,27 @@ void handleConnection(Socket client, HashMap<String, String> map, AtomicInt getc
         if (messageArr.length != 3) {
           client.write("invalid command\n");
         } else {
+          String? val = map[messageArr[1]];
           setc.number++;
-          map[messageArr[1]] =  messageArr[2];
-          client.write(messageArr[2] + "\n");
+          map[messageArr[1]] = messageArr[2];
+          if (val == null) {
+           getc.number++;
+           client.write("not found\n");
+          } else {
+           getc.number++;
+           client.write(val + "\n");
+         }}
+      } else if (messageArr[0] == "DEL") {
+        if (messageArr.length != 2) {
+          client.write("invalid command\n");
+        } else {
+          String? val = map[messageArr[1]];
+          map.remove(messageArr[1]);
+          if (val == null) {
+            client.write("not found\n");
+          } else {
+            client.write(val + "\n");
+          }
         }
       } else {
         client.write("invalid command\n");
