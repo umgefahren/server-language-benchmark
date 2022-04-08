@@ -26,7 +26,6 @@ func NewListener(ctx context.Context, store *Storage, bigstore *BigDataStore) er
 		for {
 			connection, err := ln.Accept()
 			if errors.Is(err, net.ErrClosed) {
-				// fmt.Println("Connection is closed")
 				return
 			}
 			inChan := newConn{
@@ -61,8 +60,6 @@ func ConnectionHandler(conn net.Conn, store *Storage, bigstore *BigDataStore) er
 	for {
 		line, err := bufRead.ReadString('\n')
 		if err != nil {
-			// fmt.Println("Closing handler while reading")
-			// fmt.Println(err.Error())
 			return err
 		}
 		line = strings.TrimSuffix(line, "\n")

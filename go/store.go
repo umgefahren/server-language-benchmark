@@ -41,7 +41,6 @@ func dumpingProcess(ctx context.Context, s *Storage, ticker *time.Ticker) {
 			s.dumperLock.Lock()
 			s.NewDump()
 			s.dumperLock.Unlock()
-			// fmt.Println("Dumped automatically")
 		}
 	}
 }
@@ -135,13 +134,11 @@ func (s *Storage) SetTTL(d time.Duration, key, value string) string {
 }
 
 func (s *Storage) NewDump() ([]byte, error) {
-	// tabw := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
-	// fmt.Fprintln(tabw, "KEY\tVALUE")
+
 	list := make([]Pair, 0)
 	s.content.Range(func(key, value any) bool {
 		keyS := key.(string)
 		valS := value.(Value)
-		// fmt.Fprintf(tabw, "%v\t%v\n", keyS, valS.Value)
 		pair := Pair{
 			Key:   keyS,
 			Value: valS,
@@ -149,7 +146,6 @@ func (s *Storage) NewDump() ([]byte, error) {
 		list = append(list, pair)
 		return true
 	})
-	// tabw.Flush()
 	jsonBytes, err := json.Marshal(list)
 	if err != nil {
 		return nil, err
