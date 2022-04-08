@@ -56,7 +56,6 @@ func NewBigDataStore() (*BigDataStore, error) {
 	ret.rootDir = rootDir
 	ret.fileIndex = make(map[string]string)
 	ret.fileIndexLock = sync.Mutex{}
-	// ret.fileHash = sync.Map{}
 	ret.fileCounter = &counter
 	ret.globalIoContext = globalContext
 	ret.globalCancel = globalCancel

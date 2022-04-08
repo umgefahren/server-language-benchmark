@@ -25,7 +25,6 @@ func NewListener(ctx context.Context, store *Storage, bigstore *BigDataStore) er
 	go func() {
 		for {
 			connection, err := ln.Accept()
-			// fmt.Println("New Connection")
 			if errors.Is(err, net.ErrClosed) {
 				// fmt.Println("Connection is closed")
 				return
@@ -43,7 +42,6 @@ func NewListener(ctx context.Context, store *Storage, bigstore *BigDataStore) er
 			if nConn.connerr != nil {
 				return nConn.connerr
 			}
-			// fmt.Println("Spawning new handler")
 			go ConnectionHandler(nConn.conn, store, bigstore)
 		case <-ctx.Done():
 			err = ctx.Err()
@@ -67,7 +65,6 @@ func ConnectionHandler(conn net.Conn, store *Storage, bigstore *BigDataStore) er
 			// fmt.Println(err.Error())
 			return err
 		}
-		// fmt.Println("Got new line => '" + line + "'")
 		line = strings.TrimSuffix(line, "\n")
 		cmd, err := InterpretCommand(line)
 		if err != nil {
@@ -77,7 +74,7 @@ func ConnectionHandler(conn net.Conn, store *Storage, bigstore *BigDataStore) er
 				fmt.Println("Closing handler" + err.Error())
 				return err
 			}
-			// fmt.Println("Closing handler" + err.Error())
+			fmt.Println("Closing handler" + err.Error())
 			return err
 		}
 		err = ExecuteCommand(conn, store, cmd, bigstore)
@@ -86,7 +83,6 @@ func ConnectionHandler(conn net.Conn, store *Storage, bigstore *BigDataStore) er
 			fmt.Println("Closing handler after execution")
 			return err
 		}
-		// fmt.Println("New iteration")
 	}
 }
 
@@ -151,11 +147,11 @@ func ExecuteCommand(w io.ReadWriteCloser, store *Storage, cmd *CompleteCommand, 
 		}
 		writingString = fmt.Sprintf("%v", retString)
 	default:
-		// fmt.Println("Exiting here")
+
 		return errors.New("Unimplemented")
 	}
 
 	_, err := w.Write([]byte(fmt.Sprintf("%v\n", writingString)))
-	// err = w.Flush()
+
 	return err
 }
