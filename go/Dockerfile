@@ -11,4 +11,6 @@ WORKDIR /usr/bin/
 
 COPY --from=builder /usr/local/bin/app /usr/bin/app
 
+EXPOSE 8080
+
 CMD [ "/usr/bin/app" ]
