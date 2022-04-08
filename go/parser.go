@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -21,6 +22,9 @@ const (
 	NewDump
 	DumpInterval
 	SetTTL
+	Upload
+	Download
+	Remove
 )
 
 const GetString = "GET"
@@ -33,6 +37,9 @@ const GetDumpString = "GETDUMP"
 const NewDumpString = "NEWDUMP"
 const DumpIntervalString = "DUMPINTERVAL"
 const SetTTLString = "SETTTL"
+const UploadString = "UPLOAD"
+const DownloadString = "DOWNLOAD"
+const RemoveString = "REMOVE"
 
 const regExp = "[[:alnum:]]+"
 
@@ -73,16 +80,19 @@ type CompleteCommand struct {
 	CommandKind uint16
 	Key         string
 	Value       string
+	Size        int64
 	Ttl         *time.Duration
 }
 
 func InterpretCommand(command string) (*CompleteCommand, error) {
+	fmt.Printf("Command => %v\n", command)
 	parts := strings.Split(command, " ")
 	if len(parts) == 0 {
 		return nil, InvalidCommand
 	}
 	commandString := parts[0]
 	retCommand := CompleteCommand{}
+	fmt.Printf("Command String => %v\n", commandString)
 	switch commandString {
 	case GetString:
 		if len(parts) != 2 {
@@ -175,6 +185,47 @@ func InterpretCommand(command string) (*CompleteCommand, error) {
 		retCommand.Key = potKey
 		retCommand.Value = potVal
 		retCommand.Ttl = duration
+	case UploadString:
+		if len(parts) != 3 {
+			fmt.Println("I'm crying")
+			return nil, InvalidCommand
+		}
+		retCommand.CommandKind = Upload
+		potKey := parts[1]
+		potKeyReg := matcher.MatchString(potKey)
+		if !potKeyReg {
+			fmt.Println("This is all shit")
+			return nil, InvalidCommand
+		}
+		potSize := parts[2]
+		size, err := strconv.ParseInt(potSize, 10, 64)
+		if err != nil {
+			return nil, InvalidCommand
+		}
+		retCommand.Size = size
+		retCommand.Key = potKey
+	case DownloadString:
+		if len(parts) != 2 {
+			return nil, InvalidCommand
+		}
+		retCommand.CommandKind = Download
+		potKey := parts[1]
+		potKeyReg := matcher.MatchString(potKey)
+		if !potKeyReg {
+			return nil, InvalidCommand
+		}
+		retCommand.Key = potKey
+	case RemoveString:
+		if len(parts) != 2 {
+			return nil, InvalidCommand
+		}
+		retCommand.CommandKind = Remove
+		potKey := parts[1]
+		potKeyReg := matcher.MatchString(potKey)
+		if !potKeyReg {
+			return nil, InvalidCommand
+		}
+		retCommand.Key = potKey
 	default:
 		return nil, InvalidCommand
 	}
