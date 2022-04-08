@@ -9,3 +9,9 @@ Every implmenentation has to be written in a idiomatic way to the language. The 
 ## Port
 
 The TCP Server has to listen to Port 8080.
+
+## Docker
+
+Every implementation has to provide at least one Dockerfile with, if possible, seperated build and runners, statically linked executables. If possible use an Alpine Image.
+
+If there are multiple ways to run the code, like with Python and Pypy, create a seperate Dockerfile for that, because we are interested in that sort of things. If you do so, follow the `Dockerfile-<alt>` naming convention.
