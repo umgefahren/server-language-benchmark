@@ -30,7 +30,7 @@ type BigDataStore struct {
 func destroyer(sigils <-chan os.Signal, store *BigDataStore) {
 	sig := <-sigils
 
-	fmt.Println("Catched signal")
+	fmt.Println("Caught signal")
 	fmt.Println(sig.String())
 	err := store.Cleanup()
 	if err != nil {
