@@ -5,7 +5,7 @@ import 'dart:collection';
 
 void main() async {
   // bind the socket server to an address and port
-  InternetAddress? addr = InternetAddress.tryParse("127.0.0.1");
+  InternetAddress? addr = InternetAddress.tryParse("0.0.0.0");
   final server = await ServerSocket.bind(addr, 8080);
   HashMap<String, String> map = HashMap();
   AtomicInt getc = AtomicInt();
