@@ -12,46 +12,66 @@ class SocketHandler {
     private static let bufferSize = 1000
     private static let newlineData = "\n".data(using: .utf8)!
     
-    private var fileHandle: FileHandle
-    private var buffer: Data
+    private var fileDescriptor: Int32
+    private var buffer: UnsafeMutableBufferPointer<CChar>
+    private var bufferStart, bufferEnd, searchStart: Int
     private var atEOF: Bool
     
     
     init(withFileDescriptor fileDescriptor: Int32) {
-        self.fileHandle = .init(fileDescriptor: fileDescriptor)
-        self.buffer = Data(capacity: Self.bufferSize)
+        self.fileDescriptor = fileDescriptor
+        self.buffer = .allocate(capacity: Self.bufferSize)
+        self.buffer.assign(repeating: 0)
+        self.bufferStart = 0
+        self.bufferEnd = 0
+        self.searchStart = 0
         self.atEOF = false
     }
     
     
     func nextLine() throws -> String? {
+        self.searchStart = self.bufferStart
+        
         while !self.atEOF {
-            if let range = self.buffer.range(of: Self.newlineData) {
-                let line = String(data: self.buffer.subdata(in: 0..<range.lowerBound), encoding: .utf8)
+            if let i = self.buffer[self.searchStart..<self.bufferEnd].firstIndex(of: 0x0A) {
+                let stringStart = self.bufferStart
                 
-                self.buffer.removeSubrange(0..<range.upperBound)
+                self.bufferStart = i + 1
                 
-                return line
-            } else {
-                guard let tmpData = try fileHandle.read(upToCount: Self.bufferSize) else {
-                    self.atEOF = true
-                    return nil
-                }
-                
-                if tmpData.count > 0 {
-                    buffer.append(tmpData)
-                } else {
-                    self.atEOF = true
-                    
-                    if buffer.count > 0 {
-                        let line = String(data: self.buffer, encoding: .utf8)
-                        
-                        self.buffer.count = 0
-                        
-                        return line
-                    }
-                }
+                return .init(bytesNoCopy: self.buffer.baseAddress! + stringStart, length: i - stringStart, encoding: .utf8, freeWhenDone: false)
             }
+
+            if self.buffer.count < self.bufferEnd - self.bufferStart + Self.bufferSize {
+                let oldBuffer = self.buffer
+                self.buffer = .allocate(capacity: self.bufferEnd - self.bufferStart + Self.bufferSize)
+                self.buffer.assign(repeating: 0)
+
+                self.buffer.baseAddress?.assign(from: oldBuffer.baseAddress! + self.bufferStart, count: self.bufferEnd - self.bufferStart)
+
+                self.bufferEnd = self.bufferEnd - self.bufferStart
+                self.bufferStart = 0
+
+                oldBuffer.deallocate()
+            } else if self.bufferStart != 0 {
+                self.buffer.baseAddress?.moveAssign(from: self.buffer.baseAddress! + self.bufferStart, count: self.bufferEnd - self.bufferStart)
+
+                self.bufferEnd = self.bufferEnd - self.bufferStart
+                self.bufferStart = 0
+            }
+
+            self.searchStart = self.bufferEnd
+
+            let bytesRead = read(self.fileDescriptor, self.buffer.baseAddress! + self.bufferEnd, Self.bufferSize)
+            if bytesRead < 0 {
+                self.atEOF = true
+            } else if bytesRead == 0 {
+                self.atEOF = true
+
+                return .init(bytesNoCopy: self.buffer.baseAddress! + self.bufferStart, length: self.bufferEnd - self.bufferStart, encoding: .utf8, freeWhenDone: false)
+            } else {
+                self.bufferEnd += bytesRead
+            }
+
         }
         
         return nil
@@ -59,12 +79,14 @@ class SocketHandler {
     
     
     func write<S>(_ string: S, appendingNewline: Bool = true) throws where S: StringProtocol {
-        guard let data = string.data(using: .utf8) else { return }
+        let count = string.count
         
-        try self.fileHandle.write(contentsOf: data)
+        string.withCString {
+            _ = Darwin.write(self.fileDescriptor, $0, count)
+        }
         
         if appendingNewline {
-            try self.fileHandle.write(contentsOf: Self.newlineData)
+            Darwin.write(self.fileDescriptor, "\n", 1)
         }
     }
 }
