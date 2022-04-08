@@ -1,6 +1,6 @@
 //
 //  Server.swift
-//  ServerBenchmark
+//  BenchmarkServer
 //
 //  Created by Josef Zoller on 06.04.22.
 //

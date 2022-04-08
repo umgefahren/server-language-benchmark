@@ -1,6 +1,6 @@
 //
-//  Main.swift
-//  ServerBenchmark
+//  BenchmarkServer.swift
+//  BenchmarkServer
 //
 //  Created by Josef Zoller on 07.04.22.
 //
@@ -9,7 +9,7 @@ import Foundation
 
 
 @main
-enum Main {
+enum BenchmarkServer {
     static func main() async {
         let store = Store()
         

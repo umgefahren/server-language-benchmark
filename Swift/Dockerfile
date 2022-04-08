@@ -10,8 +10,8 @@ FROM swift:latest AS runner
 
 WORKDIR /usr/bin
 
-COPY --from=builder /usr/src/app/.build/release/ServerBenchmark /usr/bin/ServerBenchmark
+COPY --from=builder /usr/src/app/.build/release/BenchmarkServer /usr/bin/BenchmarkServer
 
 EXPOSE 8080
 
-CMD [ "/usr/bin/ServerBenchmark" ]
+CMD [ "/usr/bin/BenchmarkServer" ]

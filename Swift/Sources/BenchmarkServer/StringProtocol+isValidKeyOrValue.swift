@@ -1,6 +1,6 @@
 //
 //  StringProtocol+isValidKeyOrValue.swift
-//  ServerBenchmark
+//  BenchmarkServer
 //
 //  Created by Josef Zoller on 07.04.22.
 //
