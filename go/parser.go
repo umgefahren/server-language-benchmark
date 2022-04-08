@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -85,14 +84,14 @@ type CompleteCommand struct {
 }
 
 func InterpretCommand(command string) (*CompleteCommand, error) {
-	fmt.Printf("Command => %v\n", command)
+
 	parts := strings.Split(command, " ")
 	if len(parts) == 0 {
 		return nil, InvalidCommand
 	}
 	commandString := parts[0]
 	retCommand := CompleteCommand{}
-	fmt.Printf("Command String => %v\n", commandString)
+
 	switch commandString {
 	case GetString:
 		if len(parts) != 2 {
@@ -187,14 +186,13 @@ func InterpretCommand(command string) (*CompleteCommand, error) {
 		retCommand.Ttl = duration
 	case UploadString:
 		if len(parts) != 3 {
-			fmt.Println("I'm crying")
+
 			return nil, InvalidCommand
 		}
 		retCommand.CommandKind = Upload
 		potKey := parts[1]
 		potKeyReg := matcher.MatchString(potKey)
 		if !potKeyReg {
-			fmt.Println("This is all shit")
 			return nil, InvalidCommand
 		}
 		potSize := parts[2]

@@ -151,7 +151,7 @@ func ExecuteCommand(w io.ReadWriteCloser, store *Storage, cmd *CompleteCommand, 
 		}
 		writingString = fmt.Sprintf("%v", retString)
 	default:
-		fmt.Println("Exiting here")
+		// fmt.Println("Exiting here")
 		return errors.New("Unimplemented")
 	}
 

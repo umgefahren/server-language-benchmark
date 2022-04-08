@@ -19,10 +19,9 @@ import (
 )
 
 type BigDataStore struct {
-	rootDir       string
-	fileIndex     map[string]string
-	fileIndexLock sync.Mutex
-	// fileHash        sync.Map
+	rootDir         string
+	fileIndex       map[string]string
+	fileIndexLock   sync.Mutex
 	fileCounter     *uint64
 	globalIoContext context.Context
 	globalCancel    context.CancelFunc
@@ -87,7 +86,7 @@ func (b *BigDataStore) Upload(name string, conn io.ReadWriteCloser, size int64) 
 	}
 	fileNumber := atomic.AddUint64(b.fileCounter, 1)
 	fileName := fmt.Sprintf("%v/%v-%v.bin", b.rootDir, name, fileNumber)
-	fmt.Println("Filename => " + fileName)
+
 	b.fileIndex[name] = fileName
 	newFile, err := os.Create(fileName)
 	if err != nil {
@@ -112,7 +111,7 @@ func (b *BigDataStore) Upload(name string, conn io.ReadWriteCloser, size int64) 
 	if err != nil {
 		return err
 	}
-	// b.fileHash.Store(name, hashValue)
+
 	closed = true
 	err = newFile.Sync()
 	if err != nil {
@@ -142,7 +141,7 @@ func (b *BigDataStore) Upload(name string, conn io.ReadWriteCloser, size int64) 
 	}
 	switch clientLine {
 	case "OK\n":
-		fmt.Println("File is ok")
+
 		keep = true
 		return nil
 	case "ERROR\n":
