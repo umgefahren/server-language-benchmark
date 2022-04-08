@@ -9,9 +9,9 @@ import Foundation
 
 
 actor Server {
-    #if os(macOS)
+    #if canImport(Darwin)
     static private let domain = PF_INET
-    #elseif os(Linux)
+    #elseif canImport(Glibc)
     static private let domain = AF_INET
     #endif
     
@@ -20,17 +20,19 @@ actor Server {
     
     
     private let store: Store
+    private let debug: Bool
     private let socketFD: Int32
     private var address: sockaddr_in
     private var addressSize: socklen_t
     
-    init?(store: Store) async {
+    init?(store: Store, debug: Bool) async {
         self.store = store
+        self.debug = debug
         
         
-        #if os(macOS)
+        #if canImport(Darwin)
         self.socketFD = socket(Self.domain, SOCK_STREAM, 0)
-        #elseif os(Linux)
+        #elseif canImport(Glibc)
         self.socketFD = socket(Self.domain, Int32(SOCK_STREAM.rawValue), 0)
         #endif
         
@@ -109,7 +111,9 @@ actor Server {
                         while let line = try handler.nextLine()?.trimmingCharacters(in: .whitespacesAndNewlines) {
                             guard !line.isEmpty else { continue }
                             
-                            print("Received command:", line)
+                            if self.debug {
+                                print("Received command:", line)
+                            }
                             
                             if let command = Command(fromString: line) {
                                 switch command {
