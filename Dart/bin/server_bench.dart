@@ -15,6 +15,8 @@ void main() async {
   server.listen((client) {
     handleConnection(client, map, getc, setc);
   });
+  print("Started server at '" + addr!.address + "'");
+  print("Listening at port 8080 ...");
 }
 
 void handleConnection(Socket client, HashMap<String, String> map, AtomicInt getc, AtomicInt setc) {
