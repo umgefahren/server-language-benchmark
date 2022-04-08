@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SystemPackage
 
 
 actor Server {
@@ -54,6 +55,16 @@ actor Server {
             return nil
         }
         
+        
+        let fcntlResult = fcntl(self.socketFD, F_SETFL, fcntl(self.socketFD, F_GETFL) | O_NONBLOCK)
+        if fcntlResult < 0 {
+            close(self.socketFD)
+            
+            print("Could not set socket to non-blocking")
+            return nil
+        }
+        
+        
         self.address.sin_family = sa_family_t(Self.domain)
         self.address.sin_addr.s_addr = in_addr_t(INADDR_ANY)
         self.address.sin_port = in_port_t(8080).bigEndian
@@ -95,7 +106,13 @@ actor Server {
                             accept(self.socketFD, addressPointer, addressSizePointer)
                         }
                         
-                        if (newSocketFD < 0) {
+                        if newSocketFD == -1 {
+                            let error = Errno(rawValue: errno)
+                            if error == .resourceTemporarilyUnavailable || error == .wouldBlock {
+                                await Task.yield()
+                                continue
+                            }
+                            
                             print("Could not accept connection")
                             throw CancellationError()
                         }
@@ -108,7 +125,7 @@ actor Server {
                         
                         let handler = SocketHandler(withFileDescriptor: newSocketFD)
                         
-                        while let line = try handler.nextLine()?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                        while let line = try await handler.nextLine()?.trimmingCharacters(in: .whitespacesAndNewlines) {
                             guard !line.isEmpty else { continue }
                             
                             if self.debug {
@@ -119,44 +136,44 @@ actor Server {
                                 switch command {
                                 case let .get(key):
                                     if let value = await self.store.getValue(forKey: key) {
-                                        try handler.write(value)
+                                        try await handler.write(value)
                                     } else {
-                                        try handler.write(Self.notFoundString, appendingNewline: false)
+                                        try await handler.write(Self.notFoundString, appendingNewline: false)
                                     }
                                 case let .set(key, value):
                                     if let value = await self.store.setValue(forKey: key, to: value) {
-                                        try handler.write(value)
+                                        try await handler.write(value)
                                     } else {
-                                        try handler.write(Self.notFoundString, appendingNewline: false)
+                                        try await handler.write(Self.notFoundString, appendingNewline: false)
                                     }
                                 case let .delete(key):
                                     if let value = await self.store.deleteValue(forKey: key) {
-                                        try handler.write(value)
+                                        try await handler.write(value)
                                     } else {
-                                        try handler.write(Self.notFoundString, appendingNewline: false)
+                                        try await handler.write(Self.notFoundString, appendingNewline: false)
                                     }
                                 case .getCount:
-                                    try handler.write("\(await self.store.getCount)\n", appendingNewline: false)
+                                    try await handler.write("\(await self.store.getCount)\n", appendingNewline: false)
                                 case .setCount:
-                                    try handler.write("\(await self.store.setCount)\n", appendingNewline: false)
+                                    try await handler.write("\(await self.store.setCount)\n", appendingNewline: false)
                                 case .deleteCount:
-                                    try handler.write("\(await self.store.deleteCount)\n", appendingNewline: false)
+                                    try await handler.write("\(await self.store.deleteCount)\n", appendingNewline: false)
                                 }
                             } else {
-                                try handler.write(Self.invalidCommandString, appendingNewline: false)
+                                try await handler.write(Self.invalidCommandString, appendingNewline: false)
                             }
                         }
                     }
                 }
-                
-                do {
-                    for try await _ in group {
-                        group.cancelAll()
-                    }
-                } catch {
-                    print(error.localizedDescription)
+            }
+            
+            do {
+                for try await _ in group {
                     group.cancelAll()
                 }
+            } catch {
+                print(error.localizedDescription)
+                group.cancelAll()
             }
         }
     }

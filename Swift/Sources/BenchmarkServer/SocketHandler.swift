@@ -6,11 +6,11 @@
 //
 
 import Foundation
+import SystemPackage
 
 
-class SocketHandler {
+actor SocketHandler {
     private static let bufferSize = 1000
-    private static let newlineData = "\n".data(using: .utf8)!
     
     private var fileDescriptor: Int32
     private var buffer: UnsafeMutableBufferPointer<CChar>
@@ -29,7 +29,7 @@ class SocketHandler {
     }
     
     
-    func nextLine() throws -> String? {
+    func nextLine() async throws -> String? {
         self.searchStart = self.bufferStart
         
         while !self.atEOF {
@@ -62,7 +62,13 @@ class SocketHandler {
             self.searchStart = self.bufferEnd
 
             let bytesRead = read(self.fileDescriptor, self.buffer.baseAddress! + self.bufferEnd, Self.bufferSize)
-            if bytesRead < 0 {
+            if bytesRead == -1 {
+                let error = Errno(rawValue: errno)
+                if error == .resourceTemporarilyUnavailable || error == .wouldBlock {
+                    await Task.yield()
+                    continue
+                }
+                
                 self.atEOF = true
             } else if bytesRead == 0 {
                 self.atEOF = true
@@ -82,11 +88,19 @@ class SocketHandler {
         let count = string.count
         
         string.withCString {
+            #if canImport(Darwin)
             _ = Darwin.write(self.fileDescriptor, $0, count)
+            #elseif canImport(Glibc)
+            _ = Glibc.write(self.fileDescriptor, $0, count)
+            #endif
         }
         
         if appendingNewline {
-            Darwin.write(self.fileDescriptor, "\n", 1)
+            #if canImport(Darwin)
+            _ = Darwin.write(self.fileDescriptor, "\n", 1)
+            #elseif canImport(Glibc)
+            _ = Glibc.write(self.fileDescriptor, "\n", 1)
+            #endif
         }
     }
 }
