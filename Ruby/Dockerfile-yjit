@@ -1,0 +1,7 @@
+FROM ruby:latest
+
+WORKDIR /usr/src/app
+
+COPY . .
+
+CMD ["ruby", "--yjit", "main.rb"]
