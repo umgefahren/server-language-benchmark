@@ -29,7 +29,7 @@ actor SocketHandler {
     }
     
     
-    func nextLine() async throws -> String? {
+    func nextLine() -> String? {
         self.searchStart = self.bufferStart
         
         while !self.atEOF {
@@ -65,7 +65,6 @@ actor SocketHandler {
             if bytesRead == -1 {
                 let error = Errno(rawValue: errno)
                 if error == .resourceTemporarilyUnavailable || error == .wouldBlock {
-                    await Task.yield()
                     continue
                 }
                 
@@ -84,7 +83,7 @@ actor SocketHandler {
     }
     
     
-    func write<S>(_ string: S, appendingNewline: Bool = true) throws where S: StringProtocol {
+    func write<S>(_ string: S, appendingNewline: Bool = true) where S: StringProtocol {
         let count = string.count
         
         string.withCString {

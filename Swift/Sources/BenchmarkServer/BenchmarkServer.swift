@@ -16,7 +16,7 @@ import Foundation
 
 
 struct BenchmarkServer: AsyncParsableCommand {
-    @Argument(help: "Print received commands")
+    @Flag(help: "Print received commands")
     var debug = false
     
     mutating func run() async {
@@ -57,7 +57,7 @@ struct BenchmarkServer: AsyncParsableCommand {
 
 @main
 struct BenchmarkServer: AsyncParsableCommand {
-    @Argument(help: "Print received commands")
+    @Flag(help: "Print received commands")
     var debug = false
     
     mutating func run() async {
