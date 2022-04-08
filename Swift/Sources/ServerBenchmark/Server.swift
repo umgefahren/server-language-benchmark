@@ -106,7 +106,9 @@ actor Server {
                         
                         let handler = SocketHandler(withFileDescriptor: newSocketFD)
                         
-                        while let line = try handler.nextLine() {
+                        while let line = try handler.nextLine()?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                            guard !line.isEmpty else { continue }
+                            
                             print("Received command:", line)
                             
                             if let command = Command(fromString: line) {
