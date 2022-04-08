@@ -15,28 +15,7 @@ use tokio::net::TcpStream;
 const CONCURRENT_CONNS: usize = 200;
 
 lazy_static! {}
-const BENCH_COUNT: usize = 100000;
-
-/*
-#[tokio::main]
-async fn main() {
-    let socket = TcpStream::connect("127.0.0.1:8080").await.expect("Error during connection");
-    let (socket_read, socket_write) = socket.into_split();
-    let (mut stream_read, mut stream_write) = (BufReader::new(socket_read), BufWriter::new(socket_write));
-    loop {
-        println!("Enter input => ");
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input).expect("Error during read");
-        println!("Writing => {:?}", input);
-        stream_write.write_all((input).as_bytes()).await.expect("Error during connection write");
-        stream_write.flush().await.unwrap();
-        println!("Starting to read");
-        let mut back = String::new();
-        stream_read.read_line(&mut back).await.expect("Error");
-        println!("=> {:?}", back);
-    }
-}
-*/
+const BENCH_COUNT: usize = 1000;
 
 fn get_key() -> Result<String, Box<dyn std::error::Error>> {
     let res = dialoguer::Input::new()
@@ -152,12 +131,30 @@ fn command_string() -> Result<String, Box<dyn Error>> {
     Ok(String::from(command))
 }
 
+async fn try_to_connect(addr: &str) -> Result<(), std::io::Error> {
+    let mut connection = TcpStream::connect(addr).await?;
+
+    let (owned_reader, mut owned_writer) = connection.split();
+    let mut buf_reader = BufReader::new(owned_reader);
+
+    let mut out_buf = String::new();
+
+    owned_writer.write_all("GET a\n".as_bytes()).await?;
+    owned_writer.flush().await?;
+    buf_reader.read_line(&mut out_buf).await?;
+
+    return Ok(());
+}
+
 async fn idle_till_server_connection(addr: &str) {
     let mut failed_connection_before = false;
     loop {
-        match TcpStream::connect(addr).await {
-            Ok(connection) => {
-                drop(connection);
+        match try_to_connect(addr).await {
+            Ok(()) => {
+                // TODO improve upon this workaround
+                // At the moment, this is needed as most of the benchmark implementations
+                // Reset the connection if we do not wait here.
+                tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
                 break;
             }
             Err(err) => match err.kind() {
