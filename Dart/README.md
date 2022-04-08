@@ -4,9 +4,10 @@
 
 - `GET *<key>*`
 - `SET *<key>* *<value>*`
+- `DEL *<key>*`
 - `GETC`
 - `SETC`
-- `DEL *<key>*`
+- `DELC`
 - All others will result in `invalid command\n`
 
 ## Running
