@@ -194,11 +194,15 @@ func OperationConfigFromFlags() OperationConfig {
 	case *generateDataOpt:
 		return parseGenerateDataOpt(ret)
 	case *performTestOpt:
+		ret.hostname = *serverHostnameOpt
+		ret.port = *serverPortOpt
 		return parsePerformTestOpt(ret)
 	case *performBenchmarkOpt:
 		panic("unimplemented")
 	case *interactiveModeOpt:
 		ret.operationKind = RunInteractive
+		ret.hostname = *serverHostnameOpt
+		ret.port = *serverPortOpt
 	default:
 		panic("WTF?")
 	}

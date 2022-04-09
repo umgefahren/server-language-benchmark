@@ -1,5 +1,7 @@
 package main
 
+import "log"
+
 func main() {
 	err := SetFileDescriptorLimit(-1)
 
@@ -12,5 +14,9 @@ func main() {
 		panic(err)
 	}
 
-	OperationConfigFromFlags()
+	operationConf := OperationConfigFromFlags()
+	err = PerformOperation(operationConf)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
