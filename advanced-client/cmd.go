@@ -173,7 +173,7 @@ func parsePerformTestOpt(in OperationConfig) OperationConfig {
 	performTestConfig.commands = commands
 
 	upperBound := *testCyclesOpt
-	
+
 	for i := 0; i < upperBound; i++ {
 		performTestConfig.commands = append(performTestConfig.commands, commands...)
 	}

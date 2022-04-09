@@ -58,6 +58,7 @@ func (s SerialRunner) RunPattern(pattern Pattern, conn net.Conn, reporter Report
 	connBuf := bufio.NewReadWriter(connReader, connWriter)
 	switch pattern.kind {
 	case Set, Get, Del, SetCounter, GetCounter, DelCounter:
+		outStr := s.state.PerformPattern(pattern) + "\n"
 		_, err := connBuf.WriteString(pattern.String() + "\n")
 		if err != nil {
 			return err
@@ -66,7 +67,6 @@ func (s SerialRunner) RunPattern(pattern Pattern, conn net.Conn, reporter Report
 		if err != nil {
 			return err
 		}
-		outStr := s.state.PerformPattern(pattern) + "\n"
 		realStr, err := connBuf.ReadString('\n')
 		if err != nil {
 			return err
