@@ -1,6 +1,12 @@
 package main
 
-import "github.com/goccy/go-yaml"
+import (
+	"errors"
+	"github.com/goccy/go-yaml"
+	"strings"
+)
+
+var InvalidCyclePattern = errors.New("pattern is invalid")
 
 // BenchmarkConfig is the collection of all sub-configs
 type BenchmarkConfig struct {
@@ -70,4 +76,26 @@ func ParseConfig(input string) (*BenchmarkConfig, error) {
 		return nil, err
 	}
 	return &ret, nil
+}
+
+func parseCyclePattern(input string) ([]uint, error) {
+	splits := strings.Split(input, "-")
+	ret := make([]uint, len(splits))
+	for _, split := range splits {
+		switch split {
+		case SetString:
+			ret = append(ret, Set)
+		case GetString:
+			ret = append(ret, Get)
+		case DelString:
+			ret = append(ret, Del)
+		case SetCounterString:
+			ret = append(ret, SetCounter)
+		case GetCounterString:
+			ret = append(ret, GetCounter)
+		case DelCounterString:
+			ret = append(ret, DelCounter)
+		}
+	}
+	return ret, InvalidCyclePattern
 }

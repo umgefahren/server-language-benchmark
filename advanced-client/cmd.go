@@ -29,6 +29,7 @@ var serverHostnameOpt = flag.String("host", "localhost", "Hostname of server for
 var serverPortOpt = flag.Uint("port", 8080, "Port of server for benchmark/test/interactive/single")
 var testLevelOpt = flag.Uint("level", 1, "Command complexity level for test (0 -> Only separate specified ; 1 -> Essential ; 2 -> 1 + Dumping ; 3 -> 2 + Delayed ; 4 -> 3 + Heavy Load)")
 var commandOpt = flag.String("cmd", "all", "Command to perform in single mode or comma seperated commands for testing")
+var testCyclesOpt = flag.Int("c", 10, "Specify how often the test cycle should be performed")
 var keyOpt = flag.String("key", "hello", "Key value for single mode")
 var valueOpt = flag.String("value", "world", "Value value for single mode")
 var durationOpt = flag.Duration("duration", time.Second*10, "Duration for single mode")
@@ -163,9 +164,21 @@ func parsePerformTestOpt(in OperationConfig) OperationConfig {
 		os.Exit(1)
 	}
 
+	in.operationKind = PerformTest
+
 	performTestConfig := new(TestConfig)
 	performTestConfig.level = *testLevelOpt
-	performTestConfig.commands = parseCommands(*commandOpt)
+	commands := parseCommands(*commandOpt)
+
+	performTestConfig.commands = commands
+
+	upperBound := *testCyclesOpt
+	
+	for i := 0; i < upperBound; i++ {
+		performTestConfig.commands = append(performTestConfig.commands, commands...)
+	}
+
+	in.testConfig = performTestConfig
 
 	return in
 }

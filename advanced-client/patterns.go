@@ -25,8 +25,8 @@ const (
 	DelCounterString = "DELC"
 )
 
-const upperStringLimit = 1000
-const lowerStringLimit = 10
+const upperStringLimit = 10
+const lowerStringLimit = 5
 
 const delta = upperStringLimit - lowerStringLimit
 
@@ -41,11 +41,25 @@ type Pattern struct {
 	path     string
 }
 
+func (p Pattern) DeriveGet() Pattern {
+	return Pattern{
+		kind: Get,
+		key:  p.key,
+	}
+}
+
+func (p Pattern) DeriveDel() Pattern {
+	return Pattern{
+		kind: Del,
+		key:  p.key,
+	}
+}
+
 func (p *Pattern) String() string {
 	var retString string
 	switch p.kind {
 	case Set:
-		retString = fmt.Sprintf("SET %v %v", p.kind, p.value)
+		retString = fmt.Sprintf("SET %v %v", p.key, p.value)
 	case Get:
 		retString = fmt.Sprintf("GET %v", p.key)
 	case Del:
@@ -61,7 +75,7 @@ func (p *Pattern) String() string {
 }
 
 func generateStringLength() int {
-	return rand.Intn(delta)
+	return rand.Intn(delta) + lowerStringLimit
 }
 
 func generateRune() rune {
@@ -87,4 +101,74 @@ func generatePatternWithKey(kind int) Pattern {
 	ret.kind = kind
 	ret.key = generateString()
 	return ret
+}
+
+func GenerateRandomSet() Pattern {
+	ret := generatePatternWithKey(Set)
+	ret.value = generateString()
+	return ret
+}
+
+func DerivePatternsFromCyclePattern(cyclePattern []uint) []Pattern {
+	ret := make([]Pattern, 0)
+	currentSet := GenerateRandomSet()
+	for _, p := range cyclePattern {
+
+		switch p {
+		case Set:
+			currentSet = GenerateRandomSet()
+			ret = append(ret, currentSet)
+		case Get:
+			newGet := currentSet.DeriveGet()
+			ret = append(ret, newGet)
+		case Del:
+			newDel := currentSet.DeriveDel()
+			ret = append(ret, newDel)
+		case SetCounter, GetCounter, DelCounter:
+			ret = append(ret, Pattern{kind: int(p)})
+		}
+	}
+	return ret
+}
+
+type number interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64
+}
+
+func OperationIntToString[N number](num N) string {
+	switch num {
+	case Set:
+		return SetString
+	case Get:
+		return GetString
+	case Del:
+		return DelString
+	case SetCounter:
+		return SetCounterString
+	case GetCounter:
+		return GetCounterString
+	case DelCounter:
+		return DelCounterString
+	default:
+		panic("unimplemented")
+	}
+}
+
+func OperationStringToInt[N number](str string) N {
+	switch str {
+	case SetString:
+		return Set
+	case GetString:
+		return Get
+	case DelString:
+		return Del
+	case SetCounterString:
+		return SetCounter
+	case GetCounterString:
+		return GetCounter
+	case DelCounterString:
+		return DelCounter
+	default:
+		panic("unimplemented")
+	}
 }

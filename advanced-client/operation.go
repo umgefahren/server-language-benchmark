@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/fatih/color"
 	"net"
 	"os"
 )
@@ -44,6 +45,20 @@ func PerformOperation(config OperationConfig) error {
 		return interactiveRun(config)
 	case GenerateData:
 		panic("unimplemented")
+	case PerformTest:
+		reporter := NewTestReporter()
+		runner := NewSerialRunner()
+		ops := DerivePatternsFromCyclePattern(config.testConfig.commands)
+		runner.Run(ops, config, &reporter)
+		success := reporter.Successes()
+		failures := reporter.Failures()
+		if *colorOutput {
+			color.New(color.FgGreen).Printf("Successes: %v\n", success)
+			color.New(color.FgRed).Printf("Failures: %v\n", failures)
+		} else {
+			fmt.Printf("Successes: %v\n", success)
+			fmt.Printf("Failures: %v\n", failures)
+		}
 	default:
 		panic("unimplemented")
 	}
