@@ -47,9 +47,9 @@ func PerformOperation(config OperationConfig) error {
 		panic("unimplemented")
 	case PerformTest:
 		reporter := NewTestReporter()
-		runner := NewSerialRunner()
+		runner := NewSerialRunner(&reporter)
 		ops := DerivePatternsFromCyclePattern(config.testConfig.commands)
-		runner.Run(ops, config, &reporter)
+		runner.Run(ops, config)
 		success := reporter.Successes()
 		failures := reporter.Failures()
 		if *colorOutput {

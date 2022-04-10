@@ -110,7 +110,7 @@ func (s *State) PerformPattern(pattern Pattern) string {
 type Runner interface {
 	SetState(state *State)
 	GetState() *State
-	Run(patterns []Pattern, general GeneralConfig, report Reporter) error
+	Run(patterns []Pattern, general GeneralConfig) error
 }
 
 func stringPointerToString(input *string) string {

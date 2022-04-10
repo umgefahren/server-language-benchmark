@@ -212,6 +212,8 @@ func OperationConfigFromFlags() OperationConfig {
 		return parsePerformTestOpt(ret)
 	case *performBenchmarkOpt:
 		panic("unimplemented")
+	case *singleModeOpt:
+		panic("unimplemented")
 	case *interactiveModeOpt:
 		ret.operationKind = RunInteractive
 		ret.hostname = *serverHostnameOpt

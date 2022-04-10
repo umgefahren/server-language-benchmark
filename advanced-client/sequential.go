@@ -7,24 +7,30 @@ import (
 	"net"
 )
 
-type SerialRunner struct {
-	state *State
+type SerialRunner[Re Reporter] struct {
+	state    *State
+	reporter Re
 }
 
-func NewSerialRunner() SerialRunner {
+func NewSerialRunner[Re Reporter](reporter Re) SerialRunner[Re] {
 	state := NewState()
-	return SerialRunner{&state}
+	runner := SerialRunner[Re]{
+		state:    &state,
+		reporter: reporter,
+	}
+	runner.reporter = reporter
+	return runner
 }
 
-func (s SerialRunner) SetState(state *State) {
+func (s SerialRunner[Re]) SetState(state *State) {
 	s.state = state
 }
 
-func (s SerialRunner) GetState() *State {
+func (s SerialRunner[Re]) GetState() *State {
 	return s.state
 }
 
-func (s SerialRunner) Run(patterns []Pattern, general OperationConfig, reporter Reporter) {
+func (s SerialRunner[Re]) Run(patterns []Pattern, general OperationConfig) {
 	address := fmt.Sprintf("%v:%v", general.hostname, general.port)
 	useCounter := 0
 	conn, err := net.Dial("tcp", address)
@@ -42,7 +48,7 @@ func (s SerialRunner) Run(patterns []Pattern, general OperationConfig, reporter 
 			}
 		}
 
-		err = s.RunPattern(pattern, conn, reporter)
+		err = s.RunPattern(pattern, conn)
 
 		if err != nil {
 			log.Println("ERROR during run of pattern", pattern)
@@ -52,7 +58,7 @@ func (s SerialRunner) Run(patterns []Pattern, general OperationConfig, reporter 
 	}
 }
 
-func (s SerialRunner) RunPattern(pattern Pattern, conn net.Conn, reporter Reporter) error {
+func (s SerialRunner[Re]) RunPattern(pattern Pattern, conn net.Conn) error {
 	connWriter := bufio.NewWriter(conn)
 	connReader := bufio.NewReader(conn)
 	connBuf := bufio.NewReadWriter(connReader, connWriter)
@@ -71,7 +77,7 @@ func (s SerialRunner) RunPattern(pattern Pattern, conn net.Conn, reporter Report
 		if err != nil {
 			return err
 		}
-		reporter.Report(pattern, outStr, realStr)
+		s.reporter.Report(pattern, outStr, realStr)
 	default:
 		log.Fatal("Invalid pattern")
 	}
