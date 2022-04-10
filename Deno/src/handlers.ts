@@ -147,8 +147,7 @@ async function upload({ conn, key, val, duration }: HandlerParams) {
   });
 
   let readTotal = BigInt(0);
-  const bufsize = 1024;
-  const buf = new Uint8Array(bufsize);
+  const buf = new Uint8Array(1024);
   const hash = createHash("sha512");
 
   await conn.write(messages.ready);
@@ -185,7 +184,48 @@ async function upload({ conn, key, val, duration }: HandlerParams) {
   }
 }
 
-async function download({ conn, key }: HandlerParams) {}
+async function download({ conn, key }: HandlerParams) {
+  try {
+    const { size } = await Deno.stat(key);
+    await conn.write(encoder.encode(`${size}\n`));
+  } catch {
+    await conn.write(messages.notFound);
+    return;
+  }
+
+  const file = await Deno.open(key, { read: true });
+  const buf = new Uint8Array(1024);
+  const hash = createHash("sha512");
+
+  let read = await conn.read(buf);
+  if (read == null) {
+    conn.close();
+    file.close();
+    return;
+  }
+  const ready = decoder.decode(buf.subarray(0, read - 1));
+  if (ready != "READY") {
+    file.close();
+    return;
+  }
+
+  while ((read = await file.read(buf))) {
+    await conn.write(buf.slice(0, read));
+  }
+  file.close();
+
+  read = await conn.read(buf);
+  if (read == null) {
+    conn.close();
+    return;
+  }
+  const clientHash = decoder.decode(buf.subarray(0, read - 1));
+  if (clientHash == encode(hash.digest())) {
+    await conn.write(messages.ok);
+  } else {
+    await conn.write(messages.error);
+  }
+}
 
 async function remove({ conn, key }: HandlerParams) {
   try {
