@@ -26,7 +26,7 @@ for await (const conn of listener) {
       if (handler) {
         await handler({ conn, key, val, duration });
       } else {
-        conn.write(messages.invalidCommand);
+        await conn.write(messages.invalidCommand);
       }
     } catch {
       break;

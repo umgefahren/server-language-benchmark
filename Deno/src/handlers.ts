@@ -49,19 +49,21 @@ export const handlers: Record<string, Handler> = {
 async function get({ conn, key }: HandlerParams) {
   getCount++;
   const value = map.get(key);
-  conn.write(value ? encoder.encode(`${value.text}\n`) : messages.notFound);
+  await conn.write(
+    value ? encoder.encode(`${value.text}\n`) : messages.notFound
+  );
 }
 
 async function set({ conn, key, val }: HandlerParams) {
   setCount++;
   const current = map.get(key);
   if (current) {
-    conn.write(encoder.encode(`${current.text}\n`));
+    await conn.write(encoder.encode(`${current.text}\n`));
     current.text = val;
     current.date = new Date();
   } else {
-    conn.write(messages.notFound);
     map.set(key, { text: val, date: new Date() });
+    await conn.write(messages.notFound);
   }
 }
 
@@ -69,7 +71,7 @@ async function del({ conn, key }: HandlerParams) {
   delCount++;
   const val = map.get(key);
   if (val) {
-    conn.write(encoder.encode(`${val.text}\n`));
+    await conn.write(encoder.encode(`${val.text}\n`));
     map.delete(key);
   } else {
     conn.write(messages.notFound);
@@ -77,15 +79,15 @@ async function del({ conn, key }: HandlerParams) {
 }
 
 async function getc({ conn }: HandlerParams) {
-  conn.write(encoder.encode(`${getCount}\n`));
+  await conn.write(encoder.encode(`${getCount}\n`));
 }
 
 async function setc({ conn }: HandlerParams) {
-  conn.write(encoder.encode(`${setCount}\n`));
+  await conn.write(encoder.encode(`${setCount}\n`));
 }
 
 async function delc({ conn }: HandlerParams) {
-  conn.write(encoder.encode(`${delCount}\n`));
+  await conn.write(encoder.encode(`${delCount}\n`));
 }
 
 async function newdump({ conn }: HandlerParams) {
@@ -110,7 +112,7 @@ async function dumpinterval({ conn, key }: HandlerParams) {
   if (success) {
     timeout = duration * 1000;
   } else {
-    conn.write(messages.notFound);
+    await conn.write(messages.notFound);
   }
 }
 
@@ -122,7 +124,7 @@ async function setttl(params: HandlerParams) {
       map.delete(params.key);
     }, duration * 1000);
   } else {
-    params.conn.write(messages.notFound);
+    await params.conn.write(messages.notFound);
   }
 }
 

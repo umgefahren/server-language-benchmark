@@ -7,7 +7,7 @@ export function validKey(handler: Handler): Handler {
     if (isValidKey(params.key)) {
       return handler(params);
     } else {
-      params.conn.write(messages.notFound);
+      await params.conn.write(messages.notFound);
     }
   };
 }
@@ -17,7 +17,7 @@ export function checkValidValue(handler: Handler): Handler {
     if (isValidKey(params.val)) {
       return handler(params);
     } else {
-      params.conn.write(messages.notFound);
+      await params.conn.write(messages.notFound);
     }
   };
 }
@@ -25,7 +25,7 @@ export function checkValidValue(handler: Handler): Handler {
 export function checkNoValue(handler: Handler): Handler {
   return async (params: HandlerParams) => {
     if (params.val) {
-      params.conn.write(messages.invalidCommand);
+      await params.conn.write(messages.invalidCommand);
     } else {
       return handler(params);
     }
@@ -35,7 +35,7 @@ export function checkNoValue(handler: Handler): Handler {
 export function checkNoKey(handler: Handler): Handler {
   return async (params: HandlerParams) => {
     if (params.key) {
-      params.conn.write(messages.invalidCommand);
+      await params.conn.write(messages.invalidCommand);
     } else {
       return handler(params);
     }
