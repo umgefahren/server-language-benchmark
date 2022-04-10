@@ -1,14 +1,7 @@
 import { handlers, startRecurring } from "./handlers.ts";
 import { decoder, messages } from "./constants.ts";
 
-const listener = Deno.listen({
-  port: 8080,
-  transport: "tcp",
-});
-
-startRecurring();
-
-for await (const conn of listener) {
+async function handleConn(conn: Deno.Conn) {
   const buf = new Uint8Array(1024);
   while (true) {
     try {
@@ -30,5 +23,18 @@ for await (const conn of listener) {
     } catch {
       break;
     }
+  }
+}
+
+export async function start() {
+  const listener = Deno.listen({
+    port: 8080,
+    transport: "tcp",
+  });
+
+  startRecurring();
+
+  for await (const conn of listener) {
+    handleConn(conn);
   }
 }

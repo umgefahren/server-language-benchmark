@@ -1,1 +1,3 @@
-import "./src/server.ts";
+import { start } from "./src/server.ts";
+
+await start();
