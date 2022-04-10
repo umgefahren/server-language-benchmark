@@ -3,7 +3,6 @@ import { decoder, messages } from "./constants.ts";
 
 const listener = Deno.listen({
   port: 8080,
-  hostname: "127.0.0.1",
   transport: "tcp",
 });
 
