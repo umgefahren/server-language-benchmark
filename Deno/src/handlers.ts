@@ -32,6 +32,7 @@ export const handlers: Record<string, Handler> = {
   NEWDUMP: checkNoKey(newdump),
   GETDUMP: checkNoKey(getdump),
   DUMPINTERVAL: dumpinterval,
+  SETTTL: validKeyAndValue(setttl),
 };
 
 async function get({ conn, key }: HandlerParams) {
@@ -99,5 +100,17 @@ async function dumpinterval({ conn, key }: HandlerParams) {
     timeout = duration * 1000;
   } else {
     conn.write(notFound);
+  }
+}
+
+async function setttl(params: HandlerParams) {
+  const { success, duration } = parseDuration(params.duration);
+  if (success) {
+    await set(params);
+    setTimeout(() => {
+      map.delete(params.key);
+    }, duration * 1000);
+  } else {
+    params.conn.write(notFound);
   }
 }

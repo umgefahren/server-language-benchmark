@@ -63,6 +63,13 @@ export function parseDuration(text: string): {
   success: boolean;
   duration: number;
 } {
+  if (!text) {
+    return {
+      success: false,
+      duration: 0,
+    };
+  }
+
   const digits: Array<number> = [];
 
   type Expecter = (char: string) => { valid: boolean; value?: number };
