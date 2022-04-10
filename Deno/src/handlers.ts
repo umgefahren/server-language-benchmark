@@ -210,7 +210,8 @@ async function download({ conn, key }: HandlerParams) {
   }
 
   while ((read = await file.read(buf))) {
-    await conn.write(buf.slice(0, read));
+    hash.update(buf.subarray(0, read));
+    await conn.write(buf.subarray(0, read));
   }
   file.close();
 
