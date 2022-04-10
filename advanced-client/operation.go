@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/goccy/go-yaml"
 	"net"
 	"os"
 )
@@ -44,7 +45,18 @@ func PerformOperation(config OperationConfig) error {
 	case RunInteractive:
 		return interactiveRun(config)
 	case GenerateData:
-		panic("unimplemented")
+		planData, err := os.ReadFile(config.generateData.planPath)
+		if err != nil {
+			return err
+		}
+
+		benchConfig := BenchmarkConfig{}
+		err = yaml.Unmarshal(planData, &benchConfig)
+		if err != nil {
+			return err
+		}
+
+		NewDataGeneration(&benchConfig, config.generateData.outPath, config.generateData.amount)
 	case PerformTest:
 		reporter := NewTestReporter()
 		runner := NewSerialRunner(&reporter)

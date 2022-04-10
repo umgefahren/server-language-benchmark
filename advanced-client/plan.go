@@ -95,7 +95,9 @@ func parseCyclePattern(input string) ([]uint, error) {
 			ret = append(ret, GetCounter)
 		case DelCounterString:
 			ret = append(ret, DelCounter)
+		default:
+			return nil, InvalidCyclePattern
 		}
 	}
-	return ret, InvalidCyclePattern
+	return ret, nil
 }

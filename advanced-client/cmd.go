@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/goccy/go-yaml"
 	"os"
 	"strings"
 	"time"
@@ -32,6 +33,7 @@ var commandOpt = flag.String("cmd", "all", "Command to perform in single mode or
 var testCyclesOpt = flag.Int("c", 10, "Specify how often the test cycle should be performed")
 var keyOpt = flag.String("key", "hello", "Key value for single mode")
 var valueOpt = flag.String("value", "world", "Value value for single mode")
+var compressionOpt = flag.Bool("compress", false, "Specify if compressed data is requested")
 
 // var durationOpt = flag.Duration("duration", time.Second*10, "Duration for single mode")
 var outOpt = flag.String("o", "bench.txt", "Path for output of benchmark/data generation")
@@ -104,6 +106,14 @@ func preemptiveTests() {
 }
 
 func PrintHelp() {
+	if *generateDataOpt {
+		yamlBytes, err := yaml.Marshal(DefaultBenchmarkConfig)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(yamlBytes))
+	}
+
 	flag.PrintDefaults()
 }
 
@@ -241,9 +251,8 @@ func parseHostnamePort(input OperationConfig) OperationConfig {
 }
 
 func OperationConfigFromFlags() OperationConfig {
-	flag.Parse()
-
 	preemptiveTests()
+	flag.Parse()
 
 	if *helpOpt {
 		PrintHelp()

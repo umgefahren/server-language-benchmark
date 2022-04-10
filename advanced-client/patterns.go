@@ -31,7 +31,7 @@ const (
 const upperStringLimit = 10
 const lowerStringLimit = 5
 
-const delta = upperStringLimit - lowerStringLimit
+// const delta = upperStringLimit - lowerStringLimit
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 var letterLen = len(letterRunes)
@@ -173,8 +173,17 @@ func (p *Pattern) String() string {
 	return retString
 }
 
-func generateStringLength() int {
-	return rand.Intn(delta) + lowerStringLimit
+func generateStringLength(params ...int) int {
+	lowerLimit := lowerStringLimit
+	higherLimit := upperStringLimit
+	if len(params) == 2 {
+		lowerLimit = params[0]
+		higherLimit = params[1]
+	} else if len(params) != 0 {
+		panic("wrong number of arguments passed")
+	}
+	delta := higherLimit - lowerLimit
+	return rand.Intn(delta) + lowerLimit
 }
 
 func generateRune() rune {
