@@ -3,7 +3,7 @@ FROM denoland/deno:alpine AS builder
 WORKDIR /src/app
 COPY mod.ts .
 COPY src src
-RUN deno compile -o server --allow-net mod.ts
+RUN deno compile -o server --allow-net --allow-read --allow-write mod.ts
 
 FROM alpine:latest AS runner
 

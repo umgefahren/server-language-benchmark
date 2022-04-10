@@ -1,5 +1,5 @@
 import { handlers, startRecurring } from "./handlers.ts";
-import { decoder, invalidCommand } from "./constants.ts";
+import { decoder, messages } from "./constants.ts";
 
 const listener = Deno.listen({
   port: 8080,
@@ -10,22 +10,26 @@ const listener = Deno.listen({
 startRecurring();
 
 for await (const conn of listener) {
+  const buf = new Uint8Array(1024);
   while (true) {
-    const buf = new Uint8Array(1024);
-    const read = await conn.read(buf);
-    if (read == null) {
-      conn.close();
+    try {
+      const read = await conn.read(buf);
+      if (read == null) {
+        conn.close();
+        break;
+      }
+      const text = decoder.decode(buf.subarray(0, read - 1));
+      const [cmd, key, val, duration] = text.split(" ");
+
+      const handler = handlers[cmd];
+
+      if (handler) {
+        await handler({ conn, key, val, duration });
+      } else {
+        conn.write(messages.invalidCommand);
+      }
+    } catch {
       break;
-    }
-    const text = decoder.decode(buf.slice(0, read - 1));
-    const [cmd, key, val, duration] = text.split(" ");
-
-    const handler = handlers[cmd];
-
-    if (handler) {
-      await handler({ conn, key, val, duration });
-    } else {
-      conn.write(invalidCommand);
     }
   }
 }

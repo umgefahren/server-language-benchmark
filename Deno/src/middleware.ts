@@ -1,13 +1,13 @@
 import type { Handler, HandlerParams } from "./types.ts";
 import { isValidKey } from "./helpers.ts";
-import { notFound, invalidCommand } from "./constants.ts";
+import { messages } from "./constants.ts";
 
-export function checkValidKey(handler: Handler): Handler {
+export function validKey(handler: Handler): Handler {
   return async (params: HandlerParams) => {
     if (isValidKey(params.key)) {
       return handler(params);
     } else {
-      params.conn.write(notFound);
+      params.conn.write(messages.notFound);
     }
   };
 }
@@ -17,7 +17,7 @@ export function checkValidValue(handler: Handler): Handler {
     if (isValidKey(params.val)) {
       return handler(params);
     } else {
-      params.conn.write(notFound);
+      params.conn.write(messages.notFound);
     }
   };
 }
@@ -25,7 +25,7 @@ export function checkValidValue(handler: Handler): Handler {
 export function checkNoValue(handler: Handler): Handler {
   return async (params: HandlerParams) => {
     if (params.val) {
-      params.conn.write(invalidCommand);
+      params.conn.write(messages.invalidCommand);
     } else {
       return handler(params);
     }
@@ -35,7 +35,7 @@ export function checkNoValue(handler: Handler): Handler {
 export function checkNoKey(handler: Handler): Handler {
   return async (params: HandlerParams) => {
     if (params.key) {
-      params.conn.write(invalidCommand);
+      params.conn.write(messages.invalidCommand);
     } else {
       return handler(params);
     }
@@ -43,9 +43,9 @@ export function checkNoKey(handler: Handler): Handler {
 }
 
 export function validKeyNoValue(handler: Handler): Handler {
-  return checkValidKey(checkNoValue(handler));
+  return validKey(checkNoValue(handler));
 }
 
 export function validKeyAndValue(handler: Handler): Handler {
-  return checkValidKey(checkValidValue(handler));
+  return validKey(checkValidValue(handler));
 }
