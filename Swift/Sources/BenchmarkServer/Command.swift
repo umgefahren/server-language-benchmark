@@ -1,6 +1,6 @@
 //
 //  Command.swift
-//  ServerBenchmark
+//  BenchmarkServer
 //
 //  Created by Josef Zoller on 06.04.22.
 //
@@ -16,7 +16,7 @@ enum Command {
     
     
     init?(fromString string: String) {
-        let words = string.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ", omittingEmptySubsequences: false)
+        let words = string.split(separator: " ", omittingEmptySubsequences: false)
         
         guard let commandString = words.first else { return nil }
         
