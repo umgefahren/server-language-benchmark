@@ -32,7 +32,8 @@ var commandOpt = flag.String("cmd", "all", "Command to perform in single mode or
 var testCyclesOpt = flag.Int("c", 10, "Specify how often the test cycle should be performed")
 var keyOpt = flag.String("key", "hello", "Key value for single mode")
 var valueOpt = flag.String("value", "world", "Value value for single mode")
-var durationOpt = flag.Duration("duration", time.Second*10, "Duration for single mode")
+
+// var durationOpt = flag.Duration("duration", time.Second*10, "Duration for single mode")
 var outOpt = flag.String("o", "bench.txt", "Path for output of benchmark/data generation")
 var amountOpt = flag.Float64("amount", 0.5, "Amount of data in GB to generate")
 
@@ -43,6 +44,7 @@ type OperationConfig struct {
 	operationKind uint
 	generateData  *GenerateDataConfig
 	testConfig    *TestConfig
+	singleConfig  *Single
 	hostname      string
 	port          uint
 }
@@ -64,6 +66,16 @@ type Single struct {
 	value    string
 	duration time.Duration
 	path     string
+}
+
+func (s Single) ToPattern() Pattern {
+	return Pattern{
+		kind:     int(s.kind),
+		key:      s.key,
+		value:    s.value,
+		duration: &s.duration,
+		path:     s.path,
+	}
 }
 
 func (g *GenerateDataConfig) String() string {
@@ -183,6 +195,51 @@ func parsePerformTestOpt(in OperationConfig) OperationConfig {
 	return in
 }
 
+func parseSingleTestOpt(in OperationConfig) OperationConfig {
+	in.operationKind = SingleCommand
+
+	commandString := *commandOpt
+	command, err := OperationStringToInt[uint](commandString)
+	if err != nil {
+		fmt.Println("given invalid command")
+		os.Exit(1)
+	}
+
+	singleOpt := new(Single)
+	singleOpt.kind = command
+
+	switch {
+	case command == Set || command == Get || command == Del:
+		keyPot := *keyOpt
+		if !validateString(keyPot) {
+			fmt.Println(keyPot, "is invalid as a key")
+			os.Exit(1)
+		}
+		singleOpt.key = keyPot
+		fallthrough
+	case command == Set:
+		valueOpt := *valueOpt
+		if !validateString(valueOpt) {
+			fmt.Println(valueOpt, "is invalid as a value")
+			os.Exit(1)
+		}
+		singleOpt.value = valueOpt
+	}
+
+	in.singleConfig = singleOpt
+
+	return in
+}
+
+func parseHostnamePort(input OperationConfig) OperationConfig {
+	ret := input
+	ret.hostname = *serverHostnameOpt
+	ret.port = *serverPortOpt
+
+	return ret
+
+}
+
 func OperationConfigFromFlags() OperationConfig {
 	flag.Parse()
 
@@ -207,17 +264,16 @@ func OperationConfigFromFlags() OperationConfig {
 	case *generateDataOpt:
 		return parseGenerateDataOpt(ret)
 	case *performTestOpt:
-		ret.hostname = *serverHostnameOpt
-		ret.port = *serverPortOpt
+		ret = parseHostnamePort(ret)
 		return parsePerformTestOpt(ret)
 	case *performBenchmarkOpt:
 		panic("unimplemented")
 	case *singleModeOpt:
-		panic("unimplemented")
+		ret = parseHostnamePort(ret)
+		return parseSingleTestOpt(ret)
 	case *interactiveModeOpt:
 		ret.operationKind = RunInteractive
-		ret.hostname = *serverHostnameOpt
-		ret.port = *serverPortOpt
+		ret = parseHostnamePort(ret)
 	default:
 		panic("WTF?")
 	}

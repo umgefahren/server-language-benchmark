@@ -3,6 +3,8 @@ package main
 import "log"
 
 func main() {
+	makeSearchRunes()
+
 	err := SetFileDescriptorLimit(-1)
 
 	if err != nil {

@@ -59,6 +59,31 @@ func PerformOperation(config OperationConfig) error {
 			fmt.Printf("Successes: %v\n", success)
 			fmt.Printf("Failures: %v\n", failures)
 		}
+	case SingleCommand:
+		pattern := config.singleConfig.ToPattern()
+		fmt.Println("Performing pattern:", pattern.String())
+
+		address := fmt.Sprintf("%v:%v", config.hostname, config.port)
+
+		client, err := net.Dial("tcp", address)
+		if err != nil {
+			fmt.Println("Error dialing the server:", err)
+			os.Exit(1)
+		}
+		defer client.Close()
+		_, err = client.Write([]byte(pattern.String() + "\n"))
+		if err != nil {
+			fmt.Println("Error writing to the server:", err)
+			os.Exit(1)
+		}
+		bufReader := bufio.NewReader(client)
+		serverLine, err := bufReader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading server response:", err)
+			os.Exit(1)
+		}
+		fmt.Println("Server response:")
+		fmt.Print(serverLine)
 	default:
 		panic("unimplemented")
 	}

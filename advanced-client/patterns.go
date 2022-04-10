@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -32,6 +35,102 @@ const delta = upperStringLimit - lowerStringLimit
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 var letterLen = len(letterRunes)
+
+var searchRunes = map[rune]uint8{}
+
+var timeRegex = "([0-9][0-9])h-([0-9][0-9])m-([0-9][0-9])s"
+var timeMatcher = regexp.MustCompile(timeRegex)
+
+var invalidDurationErr = errors.New("invalid duration")
+
+func makeSearchRunes() {
+	for _, r := range letterRunes {
+		searchRunes[r] = 0
+	}
+}
+
+func validateString(input string) bool {
+	for _, c := range input {
+		_, exists := searchRunes[c]
+		if exists {
+			return true
+		}
+	}
+	return false
+}
+
+func parseDuration(input string) (time.Duration, error) {
+	hours, err := strconv.ParseUint(input[:2], 10, 8)
+	if err != nil {
+		return 0, invalidDurationErr
+	}
+	if hours > 99 {
+		return 0, invalidDurationErr
+	}
+	if input[2:4] != "h-" {
+		return 0, invalidDurationErr
+	}
+	minutes, err := strconv.ParseUint(input[4:6], 10, 8)
+	if err != nil {
+		return 0, invalidDurationErr
+	}
+	if minutes > 99 {
+		return 0, invalidDurationErr
+	}
+	if input[6:8] != "m-" {
+		return 0, invalidDurationErr
+	}
+	seconds, err := strconv.ParseUint(input[8:10], 10, 8)
+	if err != nil {
+		return 0, invalidDurationErr
+	}
+	if seconds > 99 {
+		return 0, invalidDurationErr
+	}
+	if input[10:] != "s" {
+		return 0, invalidDurationErr
+	}
+	ret := time.Second * time.Duration(seconds)
+	ret += time.Minute * time.Duration(minutes)
+	ret += time.Hour * time.Duration(hours)
+	return ret, nil
+}
+
+func parseDurationRegEx(input string) (time.Duration, error) {
+	submatches := timeMatcher.FindStringSubmatch(input)
+	if len(submatches) != 4 {
+		return 0, errors.New("invalid duration")
+	}
+	hours, err := strconv.ParseInt(submatches[1], 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	minutes, err := strconv.ParseInt(submatches[2], 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	seconds, err := strconv.ParseInt(submatches[3], 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	res := time.Second * time.Duration(seconds)
+	res += time.Minute * time.Duration(minutes)
+	res += time.Hour * time.Duration(hours)
+	return res, nil
+}
+
+func generateDurationString(minHours, maxHours, minMinutes, maxMinutes, minSeconds, maxSeconds uint64) string {
+	if minHours > 99 || maxHours > 99 || minMinutes > 99 || maxMinutes > 99 || minSeconds > 99 || maxSeconds > 99 {
+		panic("You fucked up buddy")
+	}
+	hourN := maxHours - minHours
+	minuteN := maxMinutes - minMinutes
+	secondN := maxSeconds - minSeconds
+	hour := (rand.Uint64() % hourN) + minHours
+	minute := (rand.Uint64() % minuteN) + minMinutes
+	second := (rand.Uint64() % secondN) + minSeconds
+	return fmt.Sprintf("%02dh-%02dm-%02ds", hour, minute, second)
+}
 
 type Pattern struct {
 	kind     int
@@ -154,21 +253,21 @@ func OperationIntToString[N number](num N) string {
 	}
 }
 
-func OperationStringToInt[N number](str string) N {
+func OperationStringToInt[N number](str string) (N, error) {
 	switch str {
 	case SetString:
-		return Set
+		return Set, nil
 	case GetString:
-		return Get
+		return Get, nil
 	case DelString:
-		return Del
+		return Del, nil
 	case SetCounterString:
-		return SetCounter
+		return SetCounter, nil
 	case GetCounterString:
-		return GetCounter
+		return GetCounter, nil
 	case DelCounterString:
-		return DelCounter
+		return DelCounter, nil
 	default:
-		panic("unimplemented")
+		return 0, errors.New("invalid command passed")
 	}
 }
