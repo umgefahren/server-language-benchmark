@@ -76,7 +76,7 @@ export function parseDuration(text: string): {
 
   function expectDigit(char: string) {
     const digit = parseInt(char, 10);
-    if (digit > 9 || digit < 0) {
+    if (Number.isNaN(digit)) {
       return { valid: false };
     } else {
       return {
