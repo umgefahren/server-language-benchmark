@@ -37,6 +37,10 @@ The heavy load commans are:
 * [DOWNLOAD](#download)
 * [REMOVE](#remove)
 
+The maintenance commands are:
+
+* [RESET](#reset)
+
 ## Recurring dumps
 
 The server should run the NEWDUMP command in a changing interval (changed by the `DUMPINTERVAL` command) and store the result internally. The initial interval is 10s.
@@ -240,3 +244,14 @@ REMOVE key
 where `key` conforms to the [Key / Value convention](#key--value).
 
 The server should delete the file associated with `key` if present and return `not found` otherwise.
+
+### RESET
+
+The RESET command is specified as following
+
+```
+RESET
+```
+
+The server should clear all data it has acquired so far. This includes clearing the Hashmap, setting all counters to 0,
+deleting all stored files and stopping all `SETTTL` timeouts.
