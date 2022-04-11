@@ -1,68 +1,54 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
-	"os/exec"
-	"strconv"
-	"strings"
+	"syscall"
 )
 
 var (
-	fileDescriptorLimit int64 = 0
+	fileDescriptorLimit uint64 = 0
 )
 
 func InitLimits() error {
 	fLimit, err := getFileDescriptorLimit()
+
 	if err != nil {
 		return err
 	}
+
 	fileDescriptorLimit = fLimit
 
 	return nil
 }
 
-func getFileDescriptorLimit() (int64, error) {
-	ulimitCommand := exec.Command("ulimit", "-Sn")
-	ulimitOut, err := ulimitCommand.StdoutPipe()
-	if err != nil {
-		return 0, err
-	}
-	err = ulimitCommand.Start()
-	if err != nil {
-		return 0, err
-	}
-	reader := bufio.NewReader(ulimitOut)
-	outLine, err := reader.ReadString('\n')
+func getFileDescriptorLimit() (uint64, error) {
+  var rlimit syscall.Rlimit
+  err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rlimit)
 	if err != nil {
 		return 0, err
 	}
 
-	err = ulimitCommand.Wait()
-	if err != nil {
-		return 0, err
-	}
-
-	outLine = strings.TrimSuffix(outLine, "\n")
-	softLimit, err := strconv.ParseInt(outLine, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return softLimit, nil
+  // rlimit.Cur == soft limit
+	return rlimit.Cur, nil
 }
 
 func SetFileDescriptorLimit(newLimit int64) error {
-	newLimitString := fmt.Sprint(newLimit)
-	if newLimit < 0 {
-		newLimitString = "unlimited"
-	}
+  var oldLimit syscall.Rlimit
+  err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &oldLimit)
 
-	ulimitCommand := exec.Command("ulimit", "-Sn", newLimitString)
-	err := ulimitCommand.Start()
-	if err != nil {
-		return err
-	}
-	err = ulimitCommand.Wait()
+  if err != nil {
+    return err
+  }
+
+  softLimit := uint64(newLimit)
+
+  // NOFILE hard limit cannot be increased
+  if newLimit < 0 || softLimit > oldLimit.Max {
+    softLimit = oldLimit.Max
+  }
+
+  rlimit := syscall.Rlimit { Cur: softLimit, Max: oldLimit.Max }
+  err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rlimit)
+
 	if err != nil {
 		return err
 	}
