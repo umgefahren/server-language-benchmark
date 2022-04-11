@@ -133,7 +133,7 @@ func generateData(benchmarkConfig *BenchmarkConfig, basicFile io.Writer, cyclePa
 	return nil
 }
 
-func NewDataGeneration(benchmarkConfig *BenchmarkConfig, outPath string, amount float64) {
+func NewDataGeneration(benchmarkConfig *BenchmarkConfig, outPath string, amount float64, compress bool) {
 	fmt.Println("Switching into logging mode")
 
 	basicCyclePattern, err := parseCyclePattern(benchmarkConfig.Basic.CyclePattern)
@@ -184,7 +184,7 @@ func NewDataGeneration(benchmarkConfig *BenchmarkConfig, outPath string, amount 
 	}
 
 	basicDataDataPath := "basic/data.bin"
-	if *compressionOpt {
+	if compress {
 		basicDataDataPath += ".gz"
 	}
 	basicDataDataFile, err := os.Create(path.Clean(outPath) + "/" + basicDataDataPath)
@@ -198,7 +198,7 @@ func NewDataGeneration(benchmarkConfig *BenchmarkConfig, outPath string, amount 
 
 	var passingWriter WriterFlusher = buffered
 
-	if *compressionOpt {
+	if compress {
 		passingWriter, err = gzip.NewWriterLevel(buffered, gzip.BestCompression)
 		if err != nil {
 			log.Fatalln("Error creating new compressor", err)

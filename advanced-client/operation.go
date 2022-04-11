@@ -56,7 +56,7 @@ func PerformOperation(config OperationConfig) error {
 			return err
 		}
 
-		NewDataGeneration(&benchConfig, config.generateData.outPath, config.generateData.amount)
+		NewDataGeneration(&benchConfig, config.generateData.outPath, config.generateData.amount, config.generateData.compress)
 	case PerformTest:
 		reporter := NewTestReporter()
 		runner := NewSerialRunner(&reporter)
