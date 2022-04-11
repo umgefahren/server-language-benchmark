@@ -1,14 +1,11 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/fatih/color"
 	"sync/atomic"
 	"time"
 )
-
-var colorOutput = flag.Bool("color", false, "Colored output")
 
 type TestReporter struct {
 	successes *uint64
@@ -37,22 +34,13 @@ func (t *TestReporter) Report(pattern Pattern, expected, given string) {
 		atomic.AddUint64(t.failures, 1)
 		foreground = red
 	}
-	var background *color.Color
-	switch pattern.kind {
-	case Set, Get, Del:
-		background = foreground.Add(color.BgCyan)
-	case SetCounter, GetCounter, DelCounter:
-		background = foreground.Add(color.BgYellow)
-	default:
-		panic("unimplemented")
-	}
 
 	outPrint := pattern.String()
 	if !matches {
 		outPrint = fmt.Sprintf("%v Expected => %v Got => %v", outPrint, expected, given)
 	}
 	if *colorOutput {
-		_, err := background.Println(outPrint)
+		_, err := foreground.Println(outPrint)
 		if err != nil {
 			return
 		}
