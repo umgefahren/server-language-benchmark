@@ -42,10 +42,10 @@ export function checkNoKey(handler: Handler): Handler {
   };
 }
 
-export function validKeyNoValue(handler: Handler): Handler {
+export function checkValidKeyNoValue(handler: Handler): Handler {
   return validKey(checkNoValue(handler));
 }
 
-export function validKeyAndValue(handler: Handler): Handler {
+export function checkValidKeyAndValue(handler: Handler): Handler {
   return validKey(checkValidValue(handler));
 }

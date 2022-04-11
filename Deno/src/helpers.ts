@@ -20,6 +20,9 @@ export class Lock {
 }
 
 export function isValidKey(key: string): boolean {
+  if (!key) {
+    return false;
+  }
   for (const char of key) {
     const code = char.charCodeAt(0);
     if (

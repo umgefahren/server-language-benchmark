@@ -1,8 +1,8 @@
 import type { Handler, HandlerParams, MapValue } from "./types.ts";
 import { encoder, decoder, messages } from "./constants.ts";
 import {
-  validKeyNoValue,
-  validKeyAndValue,
+  checkValidKeyNoValue,
+  checkValidKeyAndValue,
   checkNoKey,
   validKey,
 } from "./middleware.ts";
@@ -31,19 +31,19 @@ export async function startRecurring() {
 }
 
 export const handlers: Record<string, Handler> = {
-  GET: validKeyNoValue(get),
-  SET: validKeyAndValue(set),
-  DEL: validKeyNoValue(del),
+  GET: checkValidKeyNoValue(get),
+  SET: checkValidKeyAndValue(set),
+  DEL: checkValidKeyNoValue(del),
   GETC: checkNoKey(getc),
   SETC: checkNoKey(setc),
   DELC: checkNoKey(delc),
   NEWDUMP: checkNoKey(newdump),
   GETDUMP: checkNoKey(getdump),
   DUMPINTERVAL: dumpinterval,
-  SETTTL: validKeyAndValue(setttl),
+  SETTTL: checkValidKeyAndValue(setttl),
   UPLOAD: validKey(upload),
-  DOWNLOAD: validKeyNoValue(download),
-  REMOVE: validKeyNoValue(remove),
+  DOWNLOAD: checkValidKeyNoValue(download),
+  REMOVE: checkValidKeyNoValue(remove),
 };
 
 async function get({ conn, key }: HandlerParams) {
