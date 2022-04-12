@@ -10,6 +10,14 @@ module ServerBenchmark
     @setc = Atomic(UInt64).new 0
     @delc = Atomic(UInt64).new 0
 
+    def valid_key(key)
+      key.each_char do |c|
+        return false unless c.ascii_alphanumeric?
+      end
+
+      true
+    end
+
     def handle_client(client)
       loop do 
         message = client.gets
@@ -27,15 +35,15 @@ module ServerBenchmark
 
       case op
       when "GET"
-        return "invalid command" if cmd.size < 2
+        return "invalid command" if cmd.size < 2 || !valid_key(cmd[1])
         @getc.add 1
         @hashmap[cmd[1]]
       when "SET"
-        return "invalid command" if cmd.size < 3
+        return "invalid command" if cmd.size < 3 || !(valid_key(cmd[1]) && valid_key(cmd[2]))
         @setc.add 1
         @hashmap[cmd[1]] = cmd[2]
       when "DEL"
-        return "invalid command" if cmd.size < 2
+        return "invalid command" if cmd.size < 2 || !valid_key(cmd[1])
         @delc.add 1
         @hashmap.delete cmd[1]
       when "GETC"
