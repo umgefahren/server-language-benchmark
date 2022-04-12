@@ -16,8 +16,8 @@ actor Server {
     static private let domain = AF_INET
     #endif
     
-    static private let invalidCommandString = "invalid command\n"
-    static private let notFoundString = "not found\n"
+    static private let invalidCommandString: CStringSlice = "invalid command\n"
+    static private let notFoundString: CStringSlice = "not found\n"
     
     
     private let store: Store
@@ -107,11 +107,11 @@ actor Server {
                 group.addTask {
                     let handler = SocketHandler(withFileDescriptor: newSocketFD)
                     
-                    while let line = await handler.nextLine()?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                    while let line = await handler.nextLine()?.trimmed {
                         guard !line.isEmpty else { continue }
                         
                         if self.debug {
-                            print("Received command:", line)
+                            print("Received command:", String(bytes: line.rawBufferPointer!, encoding: .utf8)!)
                         }
                         
                         if let command = Command(fromString: line) {
@@ -125,12 +125,16 @@ actor Server {
                             case let .set(key, value):
                                 if let value = await self.store.setValue(forKey: key, to: value) {
                                     await handler.write(value)
+                                    
+                                    value.deallocate()
                                 } else {
                                     await handler.write(Self.notFoundString, appendingNewline: false)
                                 }
                             case let .delete(key):
                                 if let value = await self.store.deleteValue(forKey: key) {
                                     await handler.write(value)
+                                    
+                                    value.deallocate()
                                 } else {
                                     await handler.write(Self.notFoundString, appendingNewline: false)
                                 }

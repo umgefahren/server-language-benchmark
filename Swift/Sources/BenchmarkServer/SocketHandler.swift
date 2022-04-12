@@ -29,7 +29,7 @@ actor SocketHandler {
     }
     
     
-    func nextLine() -> String? {
+    func nextLine() -> CStringSlice? {
         self.searchStart = self.bufferStart
         
         while !self.atEOF {
@@ -38,7 +38,8 @@ actor SocketHandler {
                 
                 self.bufferStart = i + 1
                 
-                return .init(bytesNoCopy: self.buffer.baseAddress! + stringStart, length: i - stringStart, encoding: .utf8, freeWhenDone: false)
+                return UnsafeBufferPointer(self.buffer)[stringStart..<i]
+                //return .init(bytesNoCopy: self.buffer.baseAddress! + stringStart, length: i - stringStart, encoding: .utf8, freeWhenDone: false)
             }
 
             if self.buffer.count < self.bufferEnd - self.bufferStart + Self.bufferSize {
@@ -72,7 +73,8 @@ actor SocketHandler {
             } else if bytesRead == 0 {
                 self.atEOF = true
 
-                return .init(bytesNoCopy: self.buffer.baseAddress! + self.bufferStart, length: self.bufferEnd - self.bufferStart, encoding: .utf8, freeWhenDone: false)
+                return UnsafeBufferPointer(self.buffer)[self.bufferStart..<self.bufferEnd]
+                //return .init(bytesNoCopy: self.buffer.baseAddress! + self.bufferStart, length: self.bufferEnd - self.bufferStart, encoding: .utf8, freeWhenDone: false)
             } else {
                 self.bufferEnd += bytesRead
             }
@@ -80,6 +82,25 @@ actor SocketHandler {
         }
         
         return nil
+    }
+    
+    
+    func write(_ string: CStringSlice, appendingNewline: Bool = true) {
+        let count = string.count
+        
+        #if canImport(Darwin)
+        _ = Darwin.write(self.fileDescriptor, string.rawPointer, count)
+        #elseif canImport(Glibc)
+        _ = Glibc.write(self.fileDescriptor, string.rawPointer, count)
+        #endif
+        
+        if appendingNewline {
+            #if canImport(Darwin)
+            _ = Darwin.write(self.fileDescriptor, "\n", 1)
+            #elseif canImport(Glibc)
+            _ = Glibc.write(self.fileDescriptor, "\n", 1)
+            #endif
+        }
     }
     
     
