@@ -46,7 +46,7 @@ module ServerBenchmark
         message = client.gets
         break if message.nil?
 
-        cmd = message.split
+        cmd = message.strip.split
 
         client.puts handle_command(cmd)
       end
@@ -58,34 +58,39 @@ module ServerBenchmark
 
       case op
       when "GET"
-        return "invalid command" if cmd.size < 2 || !valid_key(cmd[1])
+        return "invalid command" if cmd.size != 2 || !valid_key(cmd[1])
         @getc.add 1
         @hashmap[cmd[1]]
       when "SET"
-        return "invalid command" if cmd.size < 3 || !(valid_key(cmd[1]) && valid_key(cmd[2]))
+        return "invalid command" if cmd.size != 3 || !(valid_key(cmd[1]) && valid_key(cmd[2]))
         @setc.add 1
         @hashmap[cmd[1]] = cmd[2]
       when "DEL"
-        return "invalid command" if cmd.size < 2 || !valid_key(cmd[1])
+        return "invalid command" if cmd.size != 2 || !valid_key(cmd[1])
         @delc.add 1
         @hashmap.delete cmd[1]
       when "GETC"
+        return "invalid command" if cmd.size != 1
         @getc.get
       when "SETC"
+        return "invalid command" if cmd.size != 1
         @getc.get
       when "DELC"
+        return "invalid command" if cmd.size != 1
         @getc.get
       when "NEWDUMP"
+        return "invalid command" if cmd.size != 1
         @dump.dump
         @dump.get
       when "GETDUMP"
+        return "invalid command" if cmd.size != 1
         @dump.get
       when "DUMPINTERVAL"
-        return "invalid command" if cmd.size < 2 || (dur = parse_duration(cmd[1])).nil?
+        return "invalid command" if cmd.size != 2 || (dur = parse_duration(cmd[1])).nil?
         @dump.set_interval dur
         cmd[1]
       when "SETTTL"
-        return "invalid command" if cmd.size < 3 || !(valid_key(cmd[1]) && valid_key(cmd[2])) || (dur = parse_duration(cmd[3])).nil?
+        return "invalid command" if cmd.size != 3 || !(valid_key(cmd[1]) && valid_key(cmd[2])) || (dur = parse_duration(cmd[3])).nil?
         @setc.add 1
         ret = @hashmap[cmd[1]] = cmd[2]
 
