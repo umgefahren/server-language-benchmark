@@ -85,7 +85,16 @@ module ServerBenchmark
         @dump.set_interval dur
         cmd[1]
       when "SETTTL"
-        "unimplemented"
+        return "invalid command" if cmd.size < 3 || !(valid_key(cmd[1]) && valid_key(cmd[2])) || (dur = parse_duration(cmd[3])).nil?
+        @setc.add 1
+        ret = @hashmap[cmd[1]] = cmd[2]
+
+        spawn do
+          sleep dur
+          @hashmap.delete cmd[1]
+        end
+
+        ret
       when "UPLOAD"
         "unimplemented"
       when "DOWNLOAD"
