@@ -1,14 +1,21 @@
 require "socket"
 
+require "./dump.cr"
 require "./hashmap.cr"
 require "./record.cr"
 
 module ServerBenchmark
   class Server
-    @hashmap = ConcurrentHashMap(String, Record).new
+    @hashmap : ConcurrentHashMap(String, Record)
+    @dump : Dump
     @getc = Atomic(UInt64).new 0
     @setc = Atomic(UInt64).new 0
     @delc = Atomic(UInt64).new 0
+
+    def initialize
+      @hashmap = ConcurrentHashMap(String, Record).new
+      @dump = Dump.new(@hashmap)
+    end
 
     def valid_key(key)
       key.each_char do |c|
@@ -16,6 +23,22 @@ module ServerBenchmark
       end
 
       true
+    end
+
+    def parse_duration(s : String)
+      # Format: 00h-00m-00s
+      nil if s.size != 11
+
+      hours = s[0, 2].to_i?
+      mins = s[4, 2].to_i?
+      secs = s[8, 2].to_i?
+
+      format_invalid = s[2] != 'h' || s[3] != '-' || s[6] != 'm' || s[7] != '-' || s[10] != 's'
+      if hours.nil? || mins.nil? || secs.nil? || format_invalid
+        nil
+      else
+        Time::Span.new(hours: hours, minutes: mins, seconds: secs)
+      end
     end
 
     def handle_client(client)
@@ -52,6 +75,21 @@ module ServerBenchmark
         @getc.get
       when "DELC"
         @getc.get
+      when "NEWDUMP"
+        @dump.dump
+        @dump.get
+      when "GETDUMP"
+        @dump.get
+      when "DUMPINTERVAL"
+        return "invalid command" if cmd.size < 2 || (dur = parse_duration(cmd[1])).nil?
+        @dump.set_interval dur
+        cmd[1]
+      when "SETTTL"
+        "unimplemented"
+      when "UPLOAD"
+        "unimplemented"
+      when "DOWNLOAD"
+        "unimplemented"
       else
         "invalid command"
       end
@@ -66,6 +104,7 @@ module ServerBenchmark
         else
           break
         end
+        Fiber.yield
       end
     end
 
