@@ -10,8 +10,12 @@ module ServerBenchmark
       Dir.mkdir_p @@dir
     end
 
+    def clean
+      Dir.delete @@dir
+    end
+
     def reset
-      Dir.new(@@dir).delete
+      clean
       init
     end
 
