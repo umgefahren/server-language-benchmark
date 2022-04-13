@@ -7,15 +7,15 @@
 
 
 enum Command {
-    case get(key: CStringSlice)
-    case set(key: CStringSlice, value: CStringSlice)
-    case delete(key: CStringSlice)
+    case get(key: CString)
+    case set(key: CString, value: CString)
+    case delete(key: CString)
     case getCount
     case setCount
     case deleteCount
     
     
-    init?(fromString string: CStringSlice) {
+    init?(fromString string: CString) {
         let words = string.split(separator: " ", omittingEmptySubsequences: false)
         
         guard let commandString = words.first else { return nil }
@@ -38,7 +38,7 @@ enum Command {
             
             guard key.isValidKeyOrValue && value.isValidKeyOrValue else { return nil }
             
-            self = .set(key: key.copy, value: value.copy)
+            self = .set(key: key, value: value)
         case "DEL":
             guard words.count == 2 else { return nil }
             

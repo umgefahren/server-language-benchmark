@@ -5,7 +5,12 @@
 //  Created by Josef Zoller on 06.04.22.
 //
 
-import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
+
 import SystemPackage
 
 
@@ -16,8 +21,8 @@ actor Server {
     static private let domain = AF_INET
     #endif
     
-    static private let invalidCommandString: CStringSlice = "invalid command\n"
-    static private let notFoundString: CStringSlice = "not found\n"
+    static private let invalidCommandString: CString = "invalid command\n"
+    static private let notFoundString: CString = "not found\n"
     
     
     private let store: Store
@@ -125,16 +130,12 @@ actor Server {
                             case let .set(key, value):
                                 if let value = await self.store.setValue(forKey: key, to: value) {
                                     await handler.write(value)
-                                    
-                                    value.deallocate()
                                 } else {
                                     await handler.write(Self.notFoundString, appendingNewline: false)
                                 }
                             case let .delete(key):
                                 if let value = await self.store.deleteValue(forKey: key) {
                                     await handler.write(value)
-                                    
-                                    value.deallocate()
                                 } else {
                                     await handler.write(Self.notFoundString, appendingNewline: false)
                                 }

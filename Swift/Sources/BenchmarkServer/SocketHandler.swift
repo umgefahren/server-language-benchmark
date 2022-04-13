@@ -29,7 +29,7 @@ actor SocketHandler {
     }
     
     
-    func nextLine() -> CStringSlice? {
+    func nextLine() -> CString? {
         self.searchStart = self.bufferStart
         
         while !self.atEOF {
@@ -38,7 +38,7 @@ actor SocketHandler {
                 
                 self.bufferStart = i + 1
                 
-                return UnsafeBufferPointer(self.buffer)[stringStart..<i]
+                return .init(slice: UnsafeBufferPointer(self.buffer)[stringStart..<i])
                 //return .init(bytesNoCopy: self.buffer.baseAddress! + stringStart, length: i - stringStart, encoding: .utf8, freeWhenDone: false)
             }
 
@@ -73,7 +73,7 @@ actor SocketHandler {
             } else if bytesRead == 0 {
                 self.atEOF = true
 
-                return UnsafeBufferPointer(self.buffer)[self.bufferStart..<self.bufferEnd]
+                return .init(slice: UnsafeBufferPointer(self.buffer)[self.bufferStart..<self.bufferEnd])
                 //return .init(bytesNoCopy: self.buffer.baseAddress! + self.bufferStart, length: self.bufferEnd - self.bufferStart, encoding: .utf8, freeWhenDone: false)
             } else {
                 self.bufferEnd += bytesRead
@@ -85,7 +85,7 @@ actor SocketHandler {
     }
     
     
-    func write(_ string: CStringSlice, appendingNewline: Bool = true) {
+    func write(_ string: CString, appendingNewline: Bool = true) {
         let count = string.count
         
         #if canImport(Darwin)
