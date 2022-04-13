@@ -16,6 +16,10 @@ import Dispatch
 
 public struct CString {
     @usableFromInline
+    internal static let _digitsZeroThroughFive: ClosedRange<CChar> = "0"..."5"
+    
+    
+    @usableFromInline
     internal class _Storage {
         @usableFromInline
         internal let _slice: Slice<UnsafeBufferPointer<CChar>>
@@ -112,6 +116,31 @@ public struct CString {
         }
         
         return .init(slice: self._storage._slice[leftIndex..<(rightIndex + 1)])
+    }
+    
+    
+    @inlinable
+    func parseAsInterval() -> DispatchTimeInterval? {
+        var iterator = self._storage._slice.makeIterator()
+        
+        guard let hoursUpper = iterator.next(), hoursUpper.isDigit else { return nil }
+        guard let hoursLower = iterator.next(), hoursLower.isDigit else { return nil }
+        guard iterator.next() == "h" && iterator.next() == "-" else { return nil }
+        
+        guard let minutesUpper = iterator.next(), Self._digitsZeroThroughFive.contains(minutesUpper) else { return nil }
+        guard let minutesLower = iterator.next(), minutesLower.isDigit else { return nil }
+        guard iterator.next() == "m" && iterator.next() == "-" else { return nil }
+        
+        guard let secondsUpper = iterator.next(), Self._digitsZeroThroughFive.contains(secondsUpper) else { return nil }
+        guard let secondsLower = iterator.next(), secondsLower.isDigit else { return nil }
+        guard iterator.next() == "s" && iterator.next() == nil else { return nil }
+        
+        
+        let hours = Int((hoursUpper - "0") * 10 + (hoursLower - "0"))
+        let minutes = Int((minutesUpper - "0") * 10 + (minutesLower - "0"))
+        let seconds = Int((secondsUpper - "0") * 10 + (secondsLower - "0"))
+        
+        return .seconds(hours * 3600 + minutes * 60 + seconds)
     }
 }
 

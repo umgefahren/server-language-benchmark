@@ -5,6 +5,8 @@
 //  Created by Josef Zoller on 06.04.22.
 //
 
+import Dispatch
+
 
 enum Command {
     case get(key: CString)
@@ -13,6 +15,9 @@ enum Command {
     case getCount
     case setCount
     case deleteCount
+    case newDump
+    case getDump
+    case dumpInterval(interval: DispatchTimeInterval)
     
     
     init?(fromString string: CString) {
@@ -59,6 +64,22 @@ enum Command {
             guard words.count == 1 else { return nil }
             
             self = .deleteCount
+        case "NEWDUMP":
+            guard words.count == 1 else { return nil }
+            
+            self = .newDump
+        case "GETDUMP":
+            guard words.count == 1 else { return nil }
+            
+            self = .getDump
+        case "DUMPINTERVAL":
+            guard words.count == 2 else { return nil }
+            
+            let intervalString = words[1]
+            
+            guard let interval = intervalString.parseAsInterval() else { return nil }
+            
+            self = .dumpInterval(interval: interval)
         default:
             return nil
         }
