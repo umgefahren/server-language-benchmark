@@ -11,12 +11,24 @@ module ServerBenchmark
     end
 
     def clean
-      Dir.delete @@dir
+      rm_r @@dir
     end
 
     def reset
       clean
       init
+    end
+
+    private def rm_r(path)
+      if Dir.exists?(path) && !File.symlink?(path)
+        Dir.each_child(path) do |entry|
+          src = File.join(path, entry)
+          rm_r(src)
+        end
+        Dir.delete(path)
+      else
+        File.delete(path)
+      end
     end
 
     def upload(socket, key, size)

@@ -23,6 +23,15 @@ module ServerBenchmark
       true
     end
 
+    def reset
+      BlobStorage.reset
+      @hashmap.reset
+      @dump.reset
+      @getc.set 0
+      @setc.set 0
+      @delc.set 0
+    end
+
     def parse_duration(s : String)
       # Format: 00h-00m-00s
       nil if s.size != 11
@@ -105,7 +114,11 @@ module ServerBenchmark
       when "REMOVE"
         return "invalid command" if cmd.size != 2 || !valid_key(cmd[1])
         BlobStorage.remove cmd[1]
-        client.puts
+        client.puts "DONE"
+      when "RESET"
+        return "invalid command" if cmd.size != 1
+        reset
+        client.puts "DONE"
       else
         "invalid command"
       end

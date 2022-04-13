@@ -7,7 +7,10 @@ module ServerBenchmark
     @mutex : Mutex = Mutex.new
     @h : Hash(K, V) = Hash(K, V).new
 
-    def initialize()
+    def reset
+      @mutex.synchronize do
+        @h.clear
+      end
     end
 
     def [](key)
