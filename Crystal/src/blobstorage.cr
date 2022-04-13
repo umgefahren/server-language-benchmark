@@ -69,6 +69,13 @@ module ServerBenchmark
       buf = Bytes.new(1024)
       path = Path[@@dir, key]
 
+      unless File.exists? path
+        socket.puts "not found"
+        return
+      end
+
+      socket.puts File.size path
+
       return if socket.gets != "READY"
 
       File.open path, "r" do |f|
