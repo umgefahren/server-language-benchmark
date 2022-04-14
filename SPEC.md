@@ -154,6 +154,7 @@ GETDUMP
 ## DUMPINTERVAL
 
 Upon receiving this command the server shall cancel the next scheduled [recurring dump](#recurring-dumps), change the interval at which the recurring dumps are performed to the given `interval`, and schedule the next recurring dump to happen after the new interval has elapsed once.
+The server shall respond with `DONE`.
 
 ```
 DUMPINTERVAL interval
@@ -163,7 +164,9 @@ Argument `interval` must be a duration formatted as specified in the [duration c
 
 ## SETTTL
 
-The server shall perform a `SET` command immediately and respond with the answer specified in [SET](#set). After `duration`, the server shall remove the `key`-`value` pair from the hashmap. The timer shall start running immediately after the response of `SET` was send (+/- 1s).
+The server shall perform a `SET` command immediately and respond with the answer specified in [SET](#set). After `duration`, the server shall execute a `DEL` operation on `key`. The timer shall start running immediately after the response of `SET` was send (+/- 1s).
+
+`GET`, `SET` or `DEL` operations happening while the TTL timer is running have no additional effect: They shall behave like normal. After the timer runs out, `key` shall be deleted if it still exists.
 
 ```
 SETTTL key value duration
@@ -185,7 +188,7 @@ The `UPLOAD` protocol consists of multiple steps (every message is delimited by 
 
 1. The server shall respond with `READY` as soon it is ready to receive the data.
 2. The client streams `size` bytes of binary data to the server.
-3. The server shall respond with a [SHA-512](https://csrc.nist.gov/publications/detail/fips/180/4/final) hash of the data that was streamed in hex.
+3. The server shall respond with a [SHA-512](https://csrc.nist.gov/publications/detail/fips/180/4/final) hash of the data that was streamed as a hex string (like the output of `sha512sum`).
 4. The client answers with either `OK` or `ERROR`. If the response is `OK`, the server should do nothing. If it is `ERROR`, the server shall delete the file just created.
 
 If a file named `key` is already present, the server shall overwrite it.
@@ -205,7 +208,7 @@ The `DOWNLOAD` protocol consists of multiple steps (every message is delimited b
 1. If the file named `key` exists, the server shall respond with the size of the file named `key` in bytes and with `not found` otherwise.
 2. The client responds with `READY` as soon it is ready to receive the transmission.
 3. The server shall stream the binary data from the file named `key` to the client.
-4. The client responds with a [SHA-512](https://csrc.nist.gov/publications/detail/fips/180/4/final) hash of the data that was streamed in hex.
+4. The client responds with a [SHA-512](https://csrc.nist.gov/publications/detail/fips/180/4/final) hash of the data that was streamed as a hex string (like the output of `sha512sum`).
 5. If the hash from the client matches with the hash the server calculated, the server shall respond with `OK`. Otherwise it shall respond with `ERROR`.
 
 ## REMOVE
