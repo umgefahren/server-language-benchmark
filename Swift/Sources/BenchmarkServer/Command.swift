@@ -18,6 +18,7 @@ enum Command {
     case newDump
     case getDump
     case dumpInterval(interval: DispatchTimeInterval)
+    case setTTL(key: CString, value: CString, duration: DispatchTimeInterval)
     
     
     init?(fromString string: CString) {
@@ -80,6 +81,16 @@ enum Command {
             guard let interval = intervalString.parseAsInterval() else { return nil }
             
             self = .dumpInterval(interval: interval)
+        case "SETTTL":
+            guard words.count == 4 else { return nil }
+            
+            let key = words[1]
+            let value = words[2]
+            let durationString = words[3]
+            
+            guard let duration = durationString.parseAsInterval(), key.isValidKeyOrValue, value.isValidKeyOrValue else { return nil }
+            
+            self = .setTTL(key: key, value: value, duration: duration)
         default:
             return nil
         }

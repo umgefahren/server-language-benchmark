@@ -158,6 +158,12 @@ actor Server {
                                     await self.store.dump(to: handler)
                                 case let .dumpInterval(interval):
                                     await self.store.updateDumpInterval(interval)
+                                case let .setTTL(key, value, duration):
+                                    if let value = await self.store.setValue(forKey: key, to: value, deleteAfter: duration) {
+                                        await handler.write(value)
+                                    } else {
+                                        await handler.write(Self.notFoundString, appendingNewline: false)
+                                    }
                                 }
                             } else {
                                 await handler.write(Self.invalidCommandString, appendingNewline: false)

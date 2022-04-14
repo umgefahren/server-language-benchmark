@@ -53,9 +53,25 @@ actor Store {
     func createSnapshot() -> [CString: (value: CString, date: Date)] {
         self.snapshot = self.dictionary
         
-        print("Created snapshot")
-        
         return self.dictionary
+    }
+    
+    
+    func setValue(forKey key: CString, to value: CString, deleteAfter timeout: DispatchTimeInterval) -> CString? {
+        let key = key.copy
+        
+        let returnValue = self.setValue(forKey: key, to: value)
+        
+        Task.detached {
+            let now = DispatchTime.now()
+            let timeout = now.advanced(by: timeout).uptimeNanoseconds
+            
+            try await Task.sleep(nanoseconds: timeout - now.uptimeNanoseconds)
+            
+            _ = await self.deleteValue(forKey: key)
+        }
+        
+        return returnValue
     }
     
     
