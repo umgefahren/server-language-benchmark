@@ -1,4 +1,4 @@
-require "./sha512_256.cr"
+require "digest"
 
 module ServerBenchmark
   module BlobStorage
@@ -11,7 +11,7 @@ module ServerBenchmark
     end
 
     def clean
-      rm_r @@dir
+      rm_r @@dir if Dir.exists? @@dir
     end
 
     def reset
@@ -32,7 +32,7 @@ module ServerBenchmark
     end
 
     def upload(socket, key, size)
-      hash = Digest::SHA512_256.new
+      hash = Digest::SHA512.new
       buf = Bytes.new(1024)
       path = Path[@@dir, key]
 
@@ -65,7 +65,7 @@ module ServerBenchmark
     end
 
     def download(socket, key)
-      hash = Digest::SHA512_256.new
+      hash = Digest::SHA512.new
       buf = Bytes.new(1024)
       path = Path[@@dir, key]
 

@@ -32,7 +32,7 @@ module ServerBenchmark
       @delc.set 0
     end
 
-    def parse_duration(s : String)
+    def parse_duration?(s : String)
       # Format: 00h-00m-00s
       nil if s.size != 11
 
@@ -41,7 +41,7 @@ module ServerBenchmark
       secs = s[8, 2].to_i?
 
       format_invalid = s[2] != 'h' || s[3] != '-' || s[6] != 'm' || s[7] != '-' || s[10] != 's'
-      if hours.nil? || mins.nil? || secs.nil? || format_invalid
+      if hours.nil? || mins.nil? || secs.nil? || format_invalid || mins >= 60 || secs >= 60
         nil
       else
         Time::Span.new(hours: hours, minutes: mins, seconds: secs)
@@ -93,16 +93,17 @@ module ServerBenchmark
         return "invalid command" if cmd.size != 1
         client.puts @dump.get
       when "DUMPINTERVAL"
-        return "invalid command" if cmd.size != 2 || (dur = parse_duration(cmd[1])).nil?
+        return "invalid command" if cmd.size != 2 || (dur = parse_duration?(cmd[1])).nil?
         @dump.set_interval dur
-        client.puts cmd[1]
+        client.puts "DONE"
       when "SETTTL"
-        return "invalid command" if cmd.size != 3 || !(valid_key(cmd[1]) && valid_key(cmd[2])) || (dur = parse_duration(cmd[3])).nil?
+        return "invalid command" if cmd.size != 3 || !(valid_key(cmd[1]) && valid_key(cmd[2])) || (dur = parse_duration?(cmd[3])).nil?
         @setc.add 1
         client.puts @hashmap[cmd[1]] = cmd[2]
 
         spawn do
           sleep dur
+          @delc.add 1
           @hashmap.delete cmd[1]
         end
       when "UPLOAD"
