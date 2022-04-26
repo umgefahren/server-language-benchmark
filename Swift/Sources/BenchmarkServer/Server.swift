@@ -24,6 +24,7 @@ actor Server {
     
     static private let invalidCommandString: String = "invalid command\n"
     static private let notFoundString: String = "not found\n"
+    static private let doneString: String = "DONE\n"
     
     
     private let store: Store
@@ -158,6 +159,7 @@ actor Server {
                                     await self.store.dump(to: handler)
                                 case let .dumpInterval(interval):
                                     await self.store.updateDumpInterval(interval)
+                                    await handler.write(Self.doneString, appendingNewline: false)
                                 case let .setTTL(key, value, duration):
                                     if let value = await self.store.setValue(forKey: key, to: value, deleteAfter: duration) {
                                         await handler.write(value)
