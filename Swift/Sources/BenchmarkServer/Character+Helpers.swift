@@ -1,24 +1,17 @@
 //
-//  CChar+ExpressibleByUnicodeScalarLiteral.swift
+//  Character+Helpers.swift
 //  BenchmarkServer
 //
 //  Created by Josef Zoller on 12.04.22.
 //
 
-extension CChar: ExpressibleByUnicodeScalarLiteral {
+extension Character {
     @usableFromInline
-    internal static let _lowercaseLetters: ClosedRange<CChar> = "a"..."z"
+    internal static let _lowercaseLetters: ClosedRange<Character> = "a"..."z"
     @usableFromInline
-    internal static let _uppercaseLetters: ClosedRange<CChar> = "A"..."Z"
+    internal static let _uppercaseLetters: ClosedRange<Character> = "A"..."Z"
     @usableFromInline
-    internal static let _digits: ClosedRange<CChar> = "0"..."9"
-    
-    
-    public init(unicodeScalarLiteral scalar: Unicode.Scalar) {
-        precondition(scalar.isASCII)
-        
-        self = CChar(scalar.value)
-    }
+    internal static let _digits: ClosedRange<Character> = "0"..."9"
     
     
     @inlinable

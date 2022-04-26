@@ -11,7 +11,7 @@ import Foundation
 actor Store {
     private static let dateFormatter: DateFormatter = MicrosecondPrecisionDateFormatter()
     
-    private var dictionary = [CString: (value: CString, date: Date)]()
+    private var dictionary = [Substring: (value: Substring, date: Date)]()
     private(set) var getCount = 0
     private(set) var setCount = 0
     private(set) var deleteCount = 0
@@ -20,16 +20,16 @@ actor Store {
     private var recurringDumpInterval = DispatchTimeInterval.seconds(10)
     private var lastDumpTime: DispatchTime?
     
-    private var snapshot: [CString: (value: CString, date: Date)]?
+    private var snapshot: [Substring: (value: Substring, date: Date)]?
     
     
-    func getValue(forKey key: CString) -> CString? {
+    func getValue(forKey key: Substring) -> Substring? {
         self.getCount += 1
         
         return self.dictionary[key]?.value
     }
     
-    func setValue(forKey key: CString, to value: CString) -> CString? {
+    func setValue(forKey key: Substring, to value: Substring) -> Substring? {
         self.setCount += 1
         
         let previous = self.dictionary[key]?.value
@@ -42,7 +42,7 @@ actor Store {
         return previous
     }
     
-    func deleteValue(forKey key: CString) -> CString? {
+    func deleteValue(forKey key: Substring) -> Substring? {
         self.deleteCount += 1
         
         return self.dictionary.removeValue(forKey: key)?.value
@@ -50,14 +50,14 @@ actor Store {
     
     
     @discardableResult
-    func createSnapshot() -> [CString: (value: CString, date: Date)] {
+    func createSnapshot() -> [Substring: (value: Substring, date: Date)] {
         self.snapshot = self.dictionary
         
         return self.dictionary
     }
     
     
-    func setValue(forKey key: CString, to value: CString, deleteAfter timeout: DispatchTimeInterval) -> CString? {
+    func setValue(forKey key: Substring, to value: Substring, deleteAfter timeout: DispatchTimeInterval) -> Substring? {
         let key = key.copy
         
         let returnValue = self.setValue(forKey: key, to: value)
@@ -116,7 +116,7 @@ actor Store {
     
     
     nonisolated func dump(to socketHandler: SocketHandler) async {
-        let dictionary: [CString: (value: CString, date: Date)]
+        let dictionary: [Substring: (value: Substring, date: Date)]
         if let snapshot = await self.snapshot {
             dictionary = snapshot
         } else {

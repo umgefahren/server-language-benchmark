@@ -9,19 +9,19 @@ import Dispatch
 
 
 enum Command {
-    case get(key: CString)
-    case set(key: CString, value: CString)
-    case delete(key: CString)
+    case get(key: Substring)
+    case set(key: Substring, value: Substring)
+    case delete(key: Substring)
     case getCount
     case setCount
     case deleteCount
     case newDump
     case getDump
     case dumpInterval(interval: DispatchTimeInterval)
-    case setTTL(key: CString, value: CString, duration: DispatchTimeInterval)
+    case setTTL(key: Substring, value: Substring, duration: DispatchTimeInterval)
     
     
-    init?(fromString string: CString) {
+    init?(fromString string: Substring) {
         let words = string.split(separator: " ", omittingEmptySubsequences: false)
         
         guard let commandString = words.first else { return nil }

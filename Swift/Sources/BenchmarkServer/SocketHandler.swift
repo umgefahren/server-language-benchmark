@@ -29,7 +29,7 @@ actor SocketHandler {
     }
     
     
-    func nextLine() -> CString? {
+    func nextLine() -> Substring? {
         self.searchStart = self.bufferStart
         
         while !self.atEOF {
@@ -38,8 +38,9 @@ actor SocketHandler {
                 
                 self.bufferStart = i + 1
                 
-                return .init(slice: UnsafeBufferPointer(self.buffer)[stringStart..<i])
-                //return .init(bytesNoCopy: self.buffer.baseAddress! + stringStart, length: i - stringStart, encoding: .utf8, freeWhenDone: false)
+                guard let string = String(bytesNoCopy: self.buffer.baseAddress! + stringStart, length: i - stringStart, encoding: .ascii, freeWhenDone: false) else { return nil }
+                
+                return .init(string)
             }
 
             if self.buffer.count < self.bufferEnd - self.bufferStart + Self.bufferSize {
@@ -72,9 +73,10 @@ actor SocketHandler {
                 self.atEOF = true
             } else if bytesRead == 0 {
                 self.atEOF = true
-
-                return .init(slice: UnsafeBufferPointer(self.buffer)[self.bufferStart..<self.bufferEnd])
-                //return .init(bytesNoCopy: self.buffer.baseAddress! + self.bufferStart, length: self.bufferEnd - self.bufferStart, encoding: .utf8, freeWhenDone: false)
+                
+                guard let string = String(bytesNoCopy: self.buffer.baseAddress! + self.bufferStart, length: self.bufferEnd - self.bufferStart, encoding: .ascii, freeWhenDone: false) else { return nil }
+                
+                return .init(string)
             } else {
                 self.bufferEnd += bytesRead
             }
@@ -85,33 +87,14 @@ actor SocketHandler {
     }
     
     
-    func write(_ string: CString, appendingNewline: Bool = true) {
-        let count = string.count
-        
-        #if canImport(Darwin)
-        _ = Darwin.write(self.fileDescriptor, string.rawPointer, count)
-        #elseif canImport(Glibc)
-        _ = Glibc.write(self.fileDescriptor, string.rawPointer, count)
-        #endif
-        
-        if appendingNewline {
-            #if canImport(Darwin)
-            _ = Darwin.write(self.fileDescriptor, "\n", 1)
-            #elseif canImport(Glibc)
-            _ = Glibc.write(self.fileDescriptor, "\n", 1)
-            #endif
-        }
-    }
-    
-    
     func write<S>(_ string: S, appendingNewline: Bool = true) where S: StringProtocol {
         let count = string.count
         
-        string.withCString {
+        string.utf8.withContiguousStorageIfAvailable {
             #if canImport(Darwin)
-            _ = Darwin.write(self.fileDescriptor, $0, count)
+            _ = Darwin.write(self.fileDescriptor, $0.baseAddress, count)
             #elseif canImport(Glibc)
-            _ = Glibc.write(self.fileDescriptor, $0, count)
+            _ = Glibc.write(self.fileDescriptor, $0.baseAddress, count)
             #endif
         }
         

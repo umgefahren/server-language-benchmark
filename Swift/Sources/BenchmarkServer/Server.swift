@@ -22,8 +22,8 @@ actor Server {
     static private let domain = AF_INET
     #endif
     
-    static private let invalidCommandString: CString = "invalid command\n"
-    static private let notFoundString: CString = "not found\n"
+    static private let invalidCommandString: String = "invalid command\n"
+    static private let notFoundString: String = "not found\n"
     
     
     private let store: Store
@@ -122,7 +122,7 @@ actor Server {
                             guard !line.isEmpty else { continue }
                             
                             if self.debug {
-                                print("Received command:", String(bytes: line.rawBufferPointer!, encoding: .utf8)!)
+                                print("Received command:", line)
                             }
                             
                             if let command = Command(fromString: line) {
