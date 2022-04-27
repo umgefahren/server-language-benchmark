@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -110,7 +111,8 @@ func (s *State) PerformPattern(pattern Pattern) string {
 type Runner interface {
 	SetState(state *State)
 	GetState() *State
-	Run(patterns []Pattern, general GeneralConfig) error
+	Run(patterns []Pattern, general OperationConfig) error
+	RunAsync(ctx context.Context, patternChan <- chan []Pattern, general OperationConfig) error
 }
 
 func stringPointerToString(input *string) string {

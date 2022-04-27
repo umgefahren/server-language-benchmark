@@ -210,6 +210,7 @@ func NewDataGeneration(benchmarkConfig *BenchmarkConfig, outPath string, amount 
 		log.Fatalln(err)
 	}
 
+
 	err = passingWriter.Flush()
 	if err != nil {
 		log.Fatalln(err)

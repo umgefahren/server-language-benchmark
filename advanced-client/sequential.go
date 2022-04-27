@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -83,4 +84,8 @@ func (s SerialRunner[Re]) RunPattern(pattern Pattern, conn net.Conn) error {
 	}
 
 	return nil
+}
+
+func (s SerialRunner[Re]) RunAsync(ctx context.Context, patternChan <- chan []Pattern, general GeneralConfig) error {
+	panic("unimplemented")
 }
