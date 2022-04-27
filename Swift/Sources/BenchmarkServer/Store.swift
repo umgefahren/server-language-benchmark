@@ -67,7 +67,7 @@ actor Store {
         Task.detached {
             let task = Task.detached {
                 let now = DispatchTime.now()
-                let timeout = now.advanced(by: timeout).uptimeNanoseconds
+                let timeout = (now + timeout).uptimeNanoseconds
                 
                 try await Task.sleep(nanoseconds: timeout - now.uptimeNanoseconds)
                 
@@ -110,7 +110,7 @@ actor Store {
                 let (lastDumpTime, dumpInterval) = await self.lastDumpTimeAndDumpInterval
                 let now = DispatchTime.now()
                 
-                let timeout = (lastDumpTime ?? now).advanced(by: dumpInterval).uptimeNanoseconds
+                let timeout = ((lastDumpTime ?? now) + dumpInterval).uptimeNanoseconds
                 
                 try await Task.sleep(nanoseconds: timeout - now.uptimeNanoseconds)
                 
