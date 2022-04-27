@@ -9,6 +9,12 @@ import Dispatch
 
 
 enum Command {
+    enum File {
+        case upload(key: Substring, size: Int)
+        case download(key: Substring)
+        case delete(key: Substring)
+    }
+    
     case get(key: Substring)
     case set(key: Substring, value: Substring)
     case delete(key: Substring)
@@ -19,6 +25,7 @@ enum Command {
     case getDump
     case dumpInterval(interval: DispatchTimeInterval)
     case setTTL(key: Substring, value: Substring, duration: DispatchTimeInterval)
+    case file(File)
     
     
     init?(fromString string: Substring) {
@@ -91,6 +98,31 @@ enum Command {
             guard let duration = durationString.parseAsInterval(), key.isValidKeyOrValue, value.isValidKeyOrValue else { return nil }
             
             self = .setTTL(key: key, value: value, duration: duration)
+        case "UPLOAD":
+            guard words.count == 3 else { return nil }
+            
+            let key = words[1]
+            let sizeString = words[2]
+            
+            guard let size = Int(sizeString), key.isValidKeyOrValue else { return nil }
+            
+            self = .file(.upload(key: key, size: size))
+        case "DOWNLOAD":
+            guard words.count == 2 else { return nil }
+            
+            let key = words[1]
+            
+            guard key.isValidKeyOrValue else { return nil }
+            
+            self = .file(.download(key: key))
+        case "DELETE":
+            guard words.count == 2 else { return nil }
+            
+            let key = words[1]
+            
+            guard key.isValidKeyOrValue else { return nil }
+            
+            self = .file(.delete(key: key))
         default:
             return nil
         }

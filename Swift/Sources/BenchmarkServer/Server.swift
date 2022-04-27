@@ -28,13 +28,15 @@ actor Server {
     
     
     private let store: Store
+    private let fileHandler: FileHandler
     private let debug: Bool
     private let socketFD: Int32
     private var address: sockaddr_in
     private var addressSize: socklen_t
     
-    init?(store: Store, debug: Bool) async {
+    init?(store: Store, fileHandler: FileHandler, debug: Bool) async {
         self.store = store
+        self.fileHandler = fileHandler
         self.debug = debug
         
         
@@ -166,6 +168,8 @@ actor Server {
                                     } else {
                                         await handler.write(Self.notFoundString, appendingNewline: false)
                                     }
+                                case let .file(fileCommand):
+                                    await self.fileHandler.handleCommand(fileCommand, withSocket: handler)
                                 }
                             } else {
                                 await handler.write(Self.invalidCommandString, appendingNewline: false)

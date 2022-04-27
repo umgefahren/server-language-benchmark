@@ -10,22 +10,30 @@ import SystemPackage
 
 
 actor SocketHandler {
-    private static let bufferSize = 1000
+    private static let bufferSize = 1024
     
-    private var fileDescriptor: Int32
+    private var fileDescriptor: FileDescriptor
     private var buffer: UnsafeMutableBufferPointer<CChar>
     private var bufferStart, bufferEnd, searchStart: Int
     private var atEOF: Bool
     
     
+    private var readBuffer: UnsafeMutableRawBufferPointer {
+        .init(start: self.buffer.baseAddress?.advanced(by: self.bufferEnd), count: self.buffer.count - self.bufferEnd)
+    }
+    
+    
     init(withFileDescriptor fileDescriptor: Int32) {
-        self.fileDescriptor = fileDescriptor
+        self.fileDescriptor = .init(rawValue: fileDescriptor)
         self.buffer = .allocate(capacity: Self.bufferSize)
-        self.buffer.assign(repeating: 0)
         self.bufferStart = 0
         self.bufferEnd = 0
         self.searchStart = 0
         self.atEOF = false
+    }
+    
+    deinit {
+        self.buffer.deallocate()
     }
     
     
@@ -63,24 +71,69 @@ actor SocketHandler {
 
             self.searchStart = self.bufferEnd
 
-            let bytesRead = read(self.fileDescriptor, self.buffer.baseAddress! + self.bufferEnd, Self.bufferSize)
-            if bytesRead == -1 {
-                let error = Errno(rawValue: errno)
+            do {
+                let bytesRead = try self.fileDescriptor.read(into: self.readBuffer)
+                
+                if bytesRead == 0 {
+                    self.atEOF = true
+                    
+                    guard let string = String(bytesNoCopy: self.buffer.baseAddress! + self.bufferStart, length: self.bufferEnd - self.bufferStart, encoding: .ascii, freeWhenDone: false) else { return nil }
+                    
+                    return .init(string)
+                } else {
+                    self.bufferEnd += bytesRead
+                }
+            } catch let error as Errno {
                 if error == .resourceTemporarilyUnavailable || error == .wouldBlock {
                     continue
                 }
                 
                 self.atEOF = true
-            } else if bytesRead == 0 {
-                self.atEOF = true
+            } catch {
+                fatalError("Unreachable")
+            }
+        }
+        
+        return nil
+    }
+    
+    
+    func readBytes(maximumCount: Int) -> UnsafeRawBufferPointer? {
+        while !self.atEOF {
+            if self.bufferEnd - self.bufferStart > 0 {
+                let start = self.bufferStart
                 
-                guard let string = String(bytesNoCopy: self.buffer.baseAddress! + self.bufferStart, length: self.bufferEnd - self.bufferStart, encoding: .ascii, freeWhenDone: false) else { return nil }
+                self.bufferStart = min(self.bufferEnd, self.bufferStart + maximumCount)
                 
-                return .init(string)
-            } else {
-                self.bufferEnd += bytesRead
+                guard let rawBase = UnsafeRawPointer(self.buffer.baseAddress) else { return nil }
+                
+                return .init(start: rawBase.advanced(by: start), count: self.bufferStart - start)
             }
 
+            self.bufferStart = 0
+            self.bufferEnd = 0
+            
+            do {
+                let bytesRead = try self.fileDescriptor.read(into: self.readBuffer)
+                
+                if bytesRead == 0 {
+                    self.atEOF = true
+                    
+                    guard let rawBase = UnsafeRawPointer(self.buffer.baseAddress) else { return nil }
+                    
+                    return .init(start: rawBase.advanced(by: self.bufferStart), count: self.bufferEnd - self.bufferStart)
+                } else {
+                    self.bufferEnd += bytesRead
+                }
+            } catch let error as Errno {
+                if error == .resourceTemporarilyUnavailable || error == .wouldBlock {
+                    continue
+                }
+                
+                self.atEOF = true
+            } catch {
+                fatalError("Unreachable")
+            }
         }
         
         return nil
@@ -88,22 +141,39 @@ actor SocketHandler {
     
     
     func write<S>(_ string: S, appendingNewline: Bool = true) where S: StringProtocol {
-        let count = string.count
-        
-        string.utf8.withContiguousStorageIfAvailable {
-            #if canImport(Darwin)
-            _ = Darwin.write(self.fileDescriptor, $0.baseAddress, count)
-            #elseif canImport(Glibc)
-            _ = Glibc.write(self.fileDescriptor, $0.baseAddress, count)
-            #endif
+        do {
+            try self.fileDescriptor.writeAll(string.utf8)
+            
+            if appendingNewline {
+                try self.fileDescriptor.writeAll("\n".utf8)
+            }
+        } catch let error as Errno {
+            _ = error
+        } catch {
+            fatalError("Unreachable")
+        }
+    }
+    
+    
+    func writeContents(ofFile filePath: FilePath, size: Int) {
+        let fileBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: min(size, 1024), alignment: MemoryLayout<UInt8>.alignment)
+        defer {
+            fileBuffer.deallocate()
         }
         
-        if appendingNewline {
-            #if canImport(Darwin)
-            _ = Darwin.write(self.fileDescriptor, "\n", 1)
-            #elseif canImport(Glibc)
-            _ = Glibc.write(self.fileDescriptor, "\n", 1)
-            #endif
+        do {
+            let fileDescriptor = try FileDescriptor.open(filePath, .readOnly)
+            
+            var remainingBytes = size
+            while remainingBytes > 0 {
+                let readBytes = try fileDescriptor.read(into: fileBuffer)
+                
+                try self.fileDescriptor.writeAll(fileBuffer[..<min(readBytes, remainingBytes)])
+                
+                remainingBytes -= readBytes
+            }
+        } catch {
+            fatalError(error.localizedDescription)
         }
     }
 }

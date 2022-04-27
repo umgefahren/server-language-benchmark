@@ -21,8 +21,9 @@ struct BenchmarkServer: AsyncParsableCommand {
     
     mutating func run() async {
         let store = Store()
+        let fileHandler = FileHandler()
         
-        guard let server = await Server(store: store, debug: self.debug) else {
+        guard let server = await Server(store: store, fileHandler: fileHandler, debug: self.debug) else {
             return
         }
         
@@ -60,10 +61,11 @@ struct BenchmarkServer: AsyncParsableCommand {
     @Flag(help: "Print received commands")
     var debug = false
     
-    mutating func run() async {
+    mutating func run() async throws {
         let store = Store()
+        let fileHandler = try await FileHandler()
         
-        guard let server = await Server(store: store, debug: self.debug) else {
+        guard let server = await Server(store: store, fileHandler: fileHandler, debug: self.debug) else {
             return
         }
         
