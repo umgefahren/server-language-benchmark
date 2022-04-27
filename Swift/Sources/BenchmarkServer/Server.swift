@@ -170,6 +170,10 @@ actor Server {
                                     }
                                 case let .file(fileCommand):
                                     await self.fileHandler.handleCommand(fileCommand, withSocket: handler)
+                                case .reset:
+                                    await self.store.reset()
+                                    await self.fileHandler.reset()
+                                    await handler.write(Self.doneString, appendingNewline: false)
                                 }
                             } else {
                                 await handler.write(Self.invalidCommandString, appendingNewline: false)

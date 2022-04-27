@@ -26,6 +26,7 @@ enum Command {
     case dumpInterval(interval: DispatchTimeInterval)
     case setTTL(key: Substring, value: Substring, duration: DispatchTimeInterval)
     case file(File)
+    case reset
     
     
     init?(fromString string: Substring) {
@@ -123,6 +124,10 @@ enum Command {
             guard key.isValidKeyOrValue else { return nil }
             
             self = .file(.delete(key: key))
+        case "RESET":
+            guard words.count == 1 else { return nil }
+            
+            self = .reset
         default:
             return nil
         }

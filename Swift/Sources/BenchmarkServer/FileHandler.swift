@@ -153,4 +153,12 @@ actor FileHandler {
             await socketHandler.write(Self.doneString, appendingNewline: false)
         }
     }
+    
+    func reset() {
+        self.existingFiles = .init()
+        
+        try! FileManager.default.removeItem(at: self.storeURL)
+    
+        try! FileManager.default.createDirectory(at: self.storeURL, withIntermediateDirectories: true)
+    }
 }

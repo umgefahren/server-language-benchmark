@@ -16,11 +16,13 @@ actor Store {
     private(set) var setCount = 0
     private(set) var deleteCount = 0
     
+    private var timeoutDeleteTasks = [Task<Void, Error>]()
+    
+    private var snapshot: [Substring: (value: Substring, date: Date)]?
+    
     private var recurringDumpTask: Task<Void, Error>?
     private var recurringDumpInterval = DispatchTimeInterval.seconds(10)
     private var lastDumpTime: DispatchTime?
-    
-    private var snapshot: [Substring: (value: Substring, date: Date)]?
     
     
     func getValue(forKey key: Substring) -> Substring? {
@@ -63,15 +65,42 @@ actor Store {
         let returnValue = self.setValue(forKey: key, to: value)
         
         Task.detached {
-            let now = DispatchTime.now()
-            let timeout = now.advanced(by: timeout).uptimeNanoseconds
+            let task = Task.detached {
+                let now = DispatchTime.now()
+                let timeout = now.advanced(by: timeout).uptimeNanoseconds
+                
+                try await Task.sleep(nanoseconds: timeout - now.uptimeNanoseconds)
+                
+                _ = await self.deleteValue(forKey: key)
+            }
             
-            try await Task.sleep(nanoseconds: timeout - now.uptimeNanoseconds)
+            await self.addTimeoutDeleteTask(task)
             
-            _ = await self.deleteValue(forKey: key)
+            try? await task.value
+            
+            await self.removeTimeoutDeleteTask(task)
         }
         
         return returnValue
+    }
+    
+    func addTimeoutDeleteTask(_ task: Task<Void, Error>) {
+        self.timeoutDeleteTasks.append(task)
+    }
+    
+    func removeTimeoutDeleteTask(_ task: Task<Void, Error>) {
+        self.timeoutDeleteTasks.removeAll { $0 == task }
+    }
+    
+    
+    func reset() {
+        self.dictionary = .init()
+        self.getCount = 0
+        self.setCount = 0
+        self.deleteCount = 0
+        self.timeoutDeleteTasks.forEach { $0.cancel() }
+        self.updateDumpInterval(.seconds(10))
+        self.snapshot = nil
     }
     
     
