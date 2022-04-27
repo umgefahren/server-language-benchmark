@@ -19,9 +19,9 @@ struct BenchmarkServer: AsyncParsableCommand {
     @Flag(help: "Print received commands")
     var debug = false
     
-    mutating func run() async {
+    mutating func run() async throws {
         let store = Store()
-        let fileHandler = FileHandler()
+        let fileHandler = try await FileHandler()
         
         guard let server = await Server(store: store, fileHandler: fileHandler, debug: self.debug) else {
             return
@@ -35,6 +35,8 @@ struct BenchmarkServer: AsyncParsableCommand {
         
         
         sigintSource.setEventHandler {
+            print("")
+            
             #if canImport(Darwin)
             Darwin.exit(EXIT_FAILURE)
             #elseif canImport(Glibc)
@@ -77,6 +79,8 @@ struct BenchmarkServer: AsyncParsableCommand {
         
         
         sigintSource.setEventHandler {
+            print("")
+            
             #if canImport(Darwin)
             Darwin.exit(EXIT_FAILURE)
             #elseif canImport(Glibc)
