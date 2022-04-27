@@ -4,52 +4,46 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sync"
 	"sync/atomic"
-	"text/tabwriter"
 	"time"
 )
 
 const initialInterval = time.Second * 10
 
-
 type Value struct {
-	Value string `json:"value"`
+	Value     string    `json:"value"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
 type Pair struct {
-	Key string `json:"key"`
-	Value Value `json:"associated_value"`
+	Key   string `json:"key"`
+	Value Value  `json:"associated_value"`
 }
 
-
 type Storage struct {
-	content *sync.Map
-	setCounter *uint64
-	getCounter *uint64
-	delCounter *uint64
-	dumpContent []byte
-	dumpLock sync.RWMutex
-	dumperLock sync.Mutex
+	content      *sync.Map
+	setCounter   *uint64
+	getCounter   *uint64
+	delCounter   *uint64
+	dumpContent  []byte
+	dumpLock     sync.RWMutex
+	dumperLock   sync.Mutex
 	dumperCancel context.CancelFunc
 }
 
 func dumpingProcess(ctx context.Context, s *Storage, ticker *time.Ticker) {
 	for {
 		select {
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return
-		case <- ticker.C:
+		case <-ticker.C:
 			s.dumperLock.Lock()
 			s.NewDump()
 			s.dumperLock.Unlock()
-			fmt.Println("Dumped automatically")
 		}
 	}
 }
-
 
 func NewStorage() *Storage {
 	setCounterTmp := uint64(0)
@@ -58,10 +52,10 @@ func NewStorage() *Storage {
 	ctx, cancel := context.WithCancel(context.TODO())
 	ticker := time.NewTicker(initialInterval)
 	ret := &Storage{
-		content: &sync.Map{},
-		setCounter: &setCounterTmp,
-		getCounter: &getCounterTmp,
-		delCounter: &delCounterTmp,
+		content:      &sync.Map{},
+		setCounter:   &setCounterTmp,
+		getCounter:   &getCounterTmp,
+		delCounter:   &delCounterTmp,
 		dumperCancel: cancel,
 	}
 	go dumpingProcess(ctx, ret, ticker)
@@ -86,8 +80,8 @@ func (s *Storage) Set(key, value string) string {
 		retS := tmpCurrentVal.(Value)
 		ret = retS.Value
 	}
-	sValue := Value {
-		Value: value,
+	sValue := Value{
+		Value:     value,
 		Timestamp: time.Now(),
 	}
 	s.content.Store(key, sValue)
@@ -112,7 +106,7 @@ func (s *Storage) Delete(key string) string {
 		casted := tmpRetVal.(Value)
 		return casted.Value
 	}
-	return "not found" 
+	return "not found"
 }
 
 func (s *Storage) GetCounter() uint64 {
@@ -128,11 +122,11 @@ func (s *Storage) DelCounter() uint64 {
 }
 
 func (s *Storage) SetTTL(d time.Duration, key, value string) string {
-	ret := s.Get(key)
+	ret := s.Set(key, value)
 	timer := time.NewTimer(d)
 	fmt.Println("Spawning with ttl")
 	go func() {
-		<- timer.C
+		<-timer.C
 		fmt.Println("Deleting after TTL")
 		s.Delete(key)
 	}()
@@ -140,21 +134,18 @@ func (s *Storage) SetTTL(d time.Duration, key, value string) string {
 }
 
 func (s *Storage) NewDump() ([]byte, error) {
-	tabw := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
-	fmt.Fprintln(tabw, "KEY\tVALUE")
+
 	list := make([]Pair, 0)
 	s.content.Range(func(key, value any) bool {
 		keyS := key.(string)
 		valS := value.(Value)
-		fmt.Fprintf(tabw, "%v\t%v\n", keyS, valS.Value)
 		pair := Pair{
-			Key: keyS,
+			Key:   keyS,
 			Value: valS,
 		}
 		list = append(list, pair)
-		return true 
+		return true
 	})
-	tabw.Flush()
 	jsonBytes, err := json.Marshal(list)
 	if err != nil {
 		return nil, err
@@ -162,7 +153,7 @@ func (s *Storage) NewDump() ([]byte, error) {
 	copiedBytes := make([]byte, len(jsonBytes))
 	copy(copiedBytes, jsonBytes)
 	s.dumpLock.Lock()
-	s.dumpContent = copiedBytes 
+	s.dumpContent = copiedBytes
 	s.dumpLock.Unlock()
 	return jsonBytes, nil
 }
@@ -173,7 +164,7 @@ func (s *Storage) GetDump() ([]byte, error) {
 		s.dumpLock.RUnlock()
 		return s.NewDump()
 	}
-	defer s.dumpLock.Unlock()
+	defer s.dumpLock.RUnlock()
 	outBytes := make([]byte, len(s.dumpContent))
 	copy(outBytes, s.dumpContent)
 	return outBytes, nil
