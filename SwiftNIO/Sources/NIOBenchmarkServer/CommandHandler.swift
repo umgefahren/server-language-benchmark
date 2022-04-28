@@ -10,7 +10,7 @@ import NIO
 
 final class CommandHandler: ChannelInboundHandler {
     typealias InboundIn = [Command?]
-    typealias InboundOut = ByteBuffer
+    typealias OutboundOut = ByteBuffer
     
     
     private let store: Store
@@ -51,6 +51,20 @@ final class CommandHandler: ChannelInboundHandler {
                         return "\(await self.store.setCount)"
                     case .deleteCount:
                         return "\(await self.store.deleteCount)"
+                    case .newDump:
+                        await self.store.createSnapshot()
+                        return await .init(self.store.getDump())
+                    case .getDump:
+                        return await .init(self.store.getDump())
+                    case let .dumpInterval(interval):
+                        await self.store.updateDumpInterval(interval)
+                        return "DONE"
+                    case let .setTTL(key, value, duration):
+                        if let value = await self.store.setValue(forKey: key, to: value, deleteAfter: duration) {
+                            return value
+                        } else {
+                            return "not found"
+                        }
                     }
                 } else {
                     return "invalid command"
@@ -60,7 +74,7 @@ final class CommandHandler: ChannelInboundHandler {
             context.eventLoop.execute {
                 let outBuffer = context.channel.allocator.buffer(string: result)
                 
-                context.writeAndFlush(self.wrapInboundOut(outBuffer), promise: nil)
+                context.writeAndFlush(self.wrapOutboundOut(outBuffer), promise: nil)
             }
         }
     }

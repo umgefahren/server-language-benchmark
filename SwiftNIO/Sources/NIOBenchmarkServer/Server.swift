@@ -9,11 +9,14 @@ import NIO
 
 
 class Server {
+    let store: Store
     let group: MultiThreadedEventLoopGroup
     let bootstrap: ServerBootstrap
     
     
     init(store: Store) {
+        self.store = store
+        
         self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         
         self.bootstrap = ServerBootstrap(group: self.group)
@@ -41,6 +44,10 @@ class Server {
         } catch {
             print("Could not bind server")
             return
+        }
+        
+        Task.detached {
+            await self.store.runRecurringDumperTask()
         }
         
         do {

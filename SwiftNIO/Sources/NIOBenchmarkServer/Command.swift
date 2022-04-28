@@ -5,6 +5,8 @@
 //  Created by Josef Zoller on 09.04.22.
 //
 
+@preconcurrency import Dispatch
+
 
 enum Command: Sendable {
     case get(key: Substring)
@@ -13,6 +15,10 @@ enum Command: Sendable {
     case getCount
     case setCount
     case deleteCount
+    case newDump
+    case getDump
+    case dumpInterval(interval: DispatchTimeInterval)
+    case setTTL(key: Substring, value: Substring, duration: DispatchTimeInterval)
     
     
     init?(fromString string: String) {
@@ -59,6 +65,32 @@ enum Command: Sendable {
             guard words.count == 1 else { return nil }
             
             self = .deleteCount
+        case "NEWDUMP":
+            guard words.count == 1 else { return nil }
+            
+            self = .newDump
+        case "GETDUMP":
+            guard words.count == 1 else { return nil }
+            
+            self = .getDump
+        case "DUMPINTERVAL":
+            guard words.count == 2 else { return nil }
+            
+            let intervalString = words[1]
+            
+            guard let interval = intervalString.parseAsInterval() else { return nil }
+            
+            self = .dumpInterval(interval: interval)
+        case "SETTTL":
+            guard words.count == 4 else { return nil }
+            
+            let key = words[1]
+            let value = words[2]
+            let durationString = words[3]
+            
+            guard let duration = durationString.parseAsInterval(), key.isValidKeyOrValue, value.isValidKeyOrValue else { return nil }
+            
+            self = .setTTL(key: key, value: value, duration: duration)
         default:
             return nil
         }
