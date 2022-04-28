@@ -35,7 +35,9 @@ class Server {
     func run() {
         let channel: Channel
         do {
-            channel = try self.bootstrap.bind(host: "127.0.0.1", port: 8080).wait()
+            channel = try self.bootstrap.bind(host: "0.0.0.0", port: 8080).wait()
+            
+            print("Running server on:", channel.localAddress!)
         } catch {
             print("Could not bind server")
             return
