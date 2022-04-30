@@ -5,7 +5,13 @@
 //  Created by Josef Zoller on 06.04.22.
 //
 
-import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
+
+import Dispatch
 import SystemPackage
 
 
@@ -16,18 +22,21 @@ actor Server {
     static private let domain = AF_INET
     #endif
     
-    static private let invalidCommandString = "invalid command\n"
-    static private let notFoundString = "not found\n"
+    static private let invalidCommandString: String = "invalid command\n"
+    static private let notFoundString: String = "not found\n"
+    static private let doneString: String = "DONE\n"
     
     
     private let store: Store
+    private let fileHandler: FileHandler
     private let debug: Bool
     private let socketFD: Int32
     private var address: sockaddr_in
     private var addressSize: socklen_t
     
-    init?(store: Store, debug: Bool) async {
+    init?(store: Store, fileHandler: FileHandler, debug: Bool) async {
         self.store = store
+        self.fileHandler = fileHandler
         self.debug = debug
         
         
@@ -87,69 +96,97 @@ actor Server {
     
     
     func run() async {
-        await withThrowingTaskGroup(of: Void.self) { group in
-            while true {
-                let newSocketFD = self.withPointerToAddress { addressPointer, addressSizePointer in
-                    accept(self.socketFD, addressPointer, addressSizePointer)
-                }
-                
-                if newSocketFD == -1 {
-                    let error = Errno(rawValue: errno)
-                    if error == .resourceTemporarilyUnavailable || error == .wouldBlock {
-                        continue
+        Task.detached {
+            await self.store.runRecurringDumperTask()
+        }
+        
+        let task = Task.detached {
+            await withThrowingTaskGroup(of: Void.self) { group in
+                while true {
+                    let newSocketFD = await self.withPointerToAddress { addressPointer, addressSizePointer in
+                        accept(self.socketFD, addressPointer, addressSizePointer)
                     }
                     
-                    print("Could not accept connection")
-                    group.cancelAll()
-                    return
-                }
-                
-                group.addTask {
-                    let handler = SocketHandler(withFileDescriptor: newSocketFD)
-                    
-                    while let line = await handler.nextLine()?.trimmingCharacters(in: .whitespacesAndNewlines) {
-                        guard !line.isEmpty else { continue }
-                        
-                        if self.debug {
-                            print("Received command:", line)
+                    if newSocketFD == -1 {
+                        let error = Errno(rawValue: errno)
+                        if error == .resourceTemporarilyUnavailable || error == .wouldBlock {
+                            continue
                         }
                         
-                        if let command = Command(fromString: line) {
-                            switch command {
-                            case let .get(key):
-                                if let value = await self.store.getValue(forKey: key) {
-                                    await handler.write(value)
-                                } else {
-                                    await handler.write(Self.notFoundString, appendingNewline: false)
-                                }
-                            case let .set(key, value):
-                                if let value = await self.store.setValue(forKey: key, to: value) {
-                                    await handler.write(value)
-                                } else {
-                                    await handler.write(Self.notFoundString, appendingNewline: false)
-                                }
-                            case let .delete(key):
-                                if let value = await self.store.deleteValue(forKey: key) {
-                                    await handler.write(value)
-                                } else {
-                                    await handler.write(Self.notFoundString, appendingNewline: false)
-                                }
-                            case .getCount:
-                                await handler.write("\(await self.store.getCount)\n", appendingNewline: false)
-                            case .setCount:
-                                await handler.write("\(await self.store.setCount)\n", appendingNewline: false)
-                            case .deleteCount:
-                                await handler.write("\(await self.store.deleteCount)\n", appendingNewline: false)
+                        print("Could not accept connection")
+                        group.cancelAll()
+                        return
+                    }
+                    
+                    group.addTask {
+                        let handler = SocketHandler(withFileDescriptor: newSocketFD)
+                        
+                        while let line = await handler.nextLine()?.trimmed {
+                            guard !line.isEmpty else { continue }
+                            
+                            if self.debug {
+                                print("Received command:", line)
                             }
-                        } else {
-                            await handler.write(Self.invalidCommandString, appendingNewline: false)
+                            
+                            if let command = Command(fromString: line) {
+                                switch command {
+                                case let .get(key):
+                                    if let value = await self.store.getValue(forKey: key) {
+                                        await handler.write(value)
+                                    } else {
+                                        await handler.write(Self.notFoundString, appendingNewline: false)
+                                    }
+                                case let .set(key, value):
+                                    if let value = await self.store.setValue(forKey: key, to: value) {
+                                        await handler.write(value)
+                                    } else {
+                                        await handler.write(Self.notFoundString, appendingNewline: false)
+                                    }
+                                case let .delete(key):
+                                    if let value = await self.store.deleteValue(forKey: key) {
+                                        await handler.write(value)
+                                    } else {
+                                        await handler.write(Self.notFoundString, appendingNewline: false)
+                                    }
+                                case .getCount:
+                                    await handler.write("\(await self.store.getCount)\n", appendingNewline: false)
+                                case .setCount:
+                                    await handler.write("\(await self.store.setCount)\n", appendingNewline: false)
+                                case .deleteCount:
+                                    await handler.write("\(await self.store.deleteCount)\n", appendingNewline: false)
+                                case .newDump:
+                                    await self.store.createSnapshot()
+                                    await self.store.dump(to: handler)
+                                case .getDump:
+                                    await self.store.dump(to: handler)
+                                case let .dumpInterval(interval):
+                                    await self.store.updateDumpInterval(interval)
+                                    await handler.write(Self.doneString, appendingNewline: false)
+                                case let .setTTL(key, value, duration):
+                                    if let value = await self.store.setValue(forKey: key, to: value, deleteAfter: duration) {
+                                        await handler.write(value)
+                                    } else {
+                                        await handler.write(Self.notFoundString, appendingNewline: false)
+                                    }
+                                case let .file(fileCommand):
+                                    await self.fileHandler.handleCommand(fileCommand, withSocket: handler)
+                                case .reset:
+                                    await self.store.reset()
+                                    await self.fileHandler.reset()
+                                    await handler.write(Self.doneString, appendingNewline: false)
+                                }
+                            } else {
+                                await handler.write(Self.invalidCommandString, appendingNewline: false)
+                            }
                         }
+                        
+                        close(newSocketFD)
                     }
-                    
-                    close(newSocketFD)
                 }
             }
         }
+        
+        await task.value
     }
     
     

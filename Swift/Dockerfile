@@ -6,7 +6,7 @@ COPY . .
 
 RUN swift build -c release
 
-FROM swift:latest AS runner
+FROM swift:slim AS runner
 
 WORKDIR /usr/bin
 
