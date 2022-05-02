@@ -1,0 +1,16 @@
+general:
+  totalduration: 10.0
+  serverhostname: localhost
+  serverport: 8080
+  commandsperconn: 5
+basic:
+  key:
+    minlen: 10
+    maxlen: 1000
+    alphanumeric: false
+  value:
+    minlen: 10
+    maxlen: 1000
+    alphanumeric: false
+  cycleduration: -1.0
+  cyclepattern: SET-GET-GET-GET-DEL
