@@ -49,13 +49,16 @@ module ServerBenchmark
     end
 
     def handle_client(client)
-      loop do 
-        message = client.gets
-        break if message.nil?
+      begin
+        loop do
+          message = client.gets
+          break if message.nil?
 
-        cmd = message.strip.split
+          cmd = message.strip.split
 
-        handle_command(client, cmd)
+          handle_command(client, cmd)
+        end
+      rescue # don't crash on `connection reset by peer`
       end
     end
 
@@ -129,12 +132,23 @@ module ServerBenchmark
       puts "Starting server"
       server = TCPServer.new(8080)
       loop do
-        if client = server.accept?
-          spawn handle_client(client)
-        else
+        begin
+          if client = server.accept?
+            spawn handle_client(client)
+          else
+            break
+          end
+          Fiber.yield
+        rescue e: Socket::Error
+          print "Error while handling a client: "
+          if e.message == "accept: Too many open files"
+            puts "Too many open files.\nPlease raise your file descriptor limit:"
+            puts "$ ulimit -Sn unlimited"
+          else
+            puts "`#{e}`"
+          end
           break
         end
-        Fiber.yield
       end
     end
   end
