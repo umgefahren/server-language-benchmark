@@ -5,17 +5,31 @@
 //  Created by Josef Zoller on 06.04.22.
 //
 
+import Dispatch
+
 
 enum Command {
+    enum File {
+        case upload(key: Substring, size: Int)
+        case download(key: Substring)
+        case delete(key: Substring)
+    }
+    
     case get(key: Substring)
     case set(key: Substring, value: Substring)
     case delete(key: Substring)
     case getCount
     case setCount
     case deleteCount
+    case newDump
+    case getDump
+    case dumpInterval(interval: DispatchTimeInterval)
+    case setTTL(key: Substring, value: Substring, duration: DispatchTimeInterval)
+    case file(File)
+    case reset
     
     
-    init?(fromString string: String) {
+    init?(fromString string: Substring) {
         let words = string.split(separator: " ", omittingEmptySubsequences: false)
         
         guard let commandString = words.first else { return nil }
@@ -59,6 +73,61 @@ enum Command {
             guard words.count == 1 else { return nil }
             
             self = .deleteCount
+        case "NEWDUMP":
+            guard words.count == 1 else { return nil }
+            
+            self = .newDump
+        case "GETDUMP":
+            guard words.count == 1 else { return nil }
+            
+            self = .getDump
+        case "DUMPINTERVAL":
+            guard words.count == 2 else { return nil }
+            
+            let intervalString = words[1]
+            
+            guard let interval = intervalString.parseAsInterval() else { return nil }
+            
+            self = .dumpInterval(interval: interval)
+        case "SETTTL":
+            guard words.count == 4 else { return nil }
+            
+            let key = words[1]
+            let value = words[2]
+            let durationString = words[3]
+            
+            guard let duration = durationString.parseAsInterval(), key.isValidKeyOrValue, value.isValidKeyOrValue else { return nil }
+            
+            self = .setTTL(key: key, value: value, duration: duration)
+        case "UPLOAD":
+            guard words.count == 3 else { return nil }
+            
+            let key = words[1]
+            let sizeString = words[2]
+            
+            guard let size = Int(sizeString), key.isValidKeyOrValue else { return nil }
+            
+            self = .file(.upload(key: key, size: size))
+        case "DOWNLOAD":
+            guard words.count == 2 else { return nil }
+            
+            let key = words[1]
+            
+            guard key.isValidKeyOrValue else { return nil }
+            
+            self = .file(.download(key: key))
+        case "DELETE":
+            guard words.count == 2 else { return nil }
+            
+            let key = words[1]
+            
+            guard key.isValidKeyOrValue else { return nil }
+            
+            self = .file(.delete(key: key))
+        case "RESET":
+            guard words.count == 1 else { return nil }
+            
+            self = .reset
         default:
             return nil
         }
