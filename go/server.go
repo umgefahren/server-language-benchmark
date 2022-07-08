@@ -16,7 +16,11 @@ type newConn struct {
 }
 
 func NewListener(ctx context.Context, store *Storage, bigstore *BigDataStore) error {
-	ln, err := net.Listen("tcp", ":8080")
+        addr, err := net.ResolveTCPAddr("tcp", ":8080")
+        if err != nil {
+                return err
+        }
+        ln, err := net.ListenTCP("tcp", addr)
 	if err != nil {
 		return err
 	}
@@ -24,7 +28,7 @@ func NewListener(ctx context.Context, store *Storage, bigstore *BigDataStore) er
 	connChan := make(chan newConn)
 	go func() {
 		for {
-			connection, err := ln.Accept()
+			connection, err := ln.AcceptTCP()
 			if errors.Is(err, net.ErrClosed) {
 				return
 			}
