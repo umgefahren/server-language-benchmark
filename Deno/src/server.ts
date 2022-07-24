@@ -21,6 +21,7 @@ async function handleConn(conn: Deno.Conn) {
         await conn.write(messages.invalidCommand);
       }
     } catch {
+      conn.close();
       break;
     }
   }
